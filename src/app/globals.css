@@ -682,3 +682,97 @@ button:active{
 .password-field input{width:100%;padding-right:46px!important}
 .password-eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:36px;height:36px;border:0;background:transparent;border-radius:10px;cursor:pointer;font-size:20px;line-height:1}
 .password-eye:active{transform:translateY(-50%) scale(.92)}
+
+/* 0.15 - Màu sắc & trạng thái chọn món */
+.product{
+  position:relative;
+  overflow:hidden;
+}
+.product.selected{
+  background:#fff2df!important;
+  border-color:#f58a1f!important;
+  box-shadow:0 0 0 2px rgba(245,138,31,.12);
+}
+.product.selected span,
+.product.selected strong{
+  color:#9a4f00;
+}
+.selected-badge{
+  position:absolute;
+  top:7px;
+  right:7px;
+  min-width:26px;
+  height:26px;
+  padding:0 7px;
+  border-radius:999px;
+  background:#f58a1f;
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-style:normal;
+  font-size:12px;
+  font-weight:800;
+  box-shadow:0 4px 12px rgba(245,138,31,.24);
+}
+
+/* Nút bấm có phản hồi màu rõ hơn */
+.primary:hover{filter:brightness(.98);box-shadow:0 6px 16px rgba(245,138,31,.18)}
+.secondary:hover{background:#f6f6f6}
+.chip.active{
+  background:#fff2df!important;
+  border-color:#f58a1f!important;
+  color:#9a4f00!important;
+}
+.pay.active{
+  background:#fff2df!important;
+  border-color:#f58a1f!important;
+  color:#9a4f00!important;
+}
+
+/* Làm giao diện sinh động hơn nhưng vẫn nhẹ */
+.hero{
+  background:linear-gradient(145deg,#fff7ed,#ffffff 70%);
+  border-color:#f7d3a5;
+}
+.order-card{
+  background:linear-gradient(180deg,#ffffff,#fffdfa);
+}
+.stock-alert-card.warning{
+  background:linear-gradient(145deg,#fff8ea,#fffdf8);
+}
+.stock-alert-card.ok{
+  background:linear-gradient(145deg,#f3fbf6,#ffffff);
+}
+.cash-summary .card:nth-child(1){
+  background:#f3fbf6;
+  border-color:#cfe8d7;
+}
+.cash-summary .card:nth-child(2){
+  background:#fff5f4;
+  border-color:#f0cfcb;
+}
+.cash-summary .card:nth-child(3){
+  background:#fff8ef;
+  border-color:#f4d4aa;
+}
+.food-current-order{
+  background:linear-gradient(180deg,#ffffff,#fffaf4);
+}
+.report-menu button:hover{
+  background:#fff8ef;
+}
+
+/* Mobile selected state rõ nhưng không chói */
+@media(max-width:700px){
+  .product.selected{
+    box-shadow:0 0 0 2px rgba(245,138,31,.14);
+  }
+  .selected-badge{
+    top:6px;
+    right:6px;
+    min-width:24px;
+    height:24px;
+    font-size:11px;
+  }
+}
