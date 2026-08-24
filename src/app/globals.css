@@ -469,3 +469,51 @@ button:active{
     justify-content:flex-end;
   }
 }
+
+/* 0.13 - Dòng tiền */
+.wallet-card{background:#f8fbff}
+.total-wallet{background:#fff8ef;border-color:#f2c991}
+.cash-summary{grid-template-columns:repeat(2,1fr)}
+@media(min-width:760px){
+  .cash-summary{grid-template-columns:repeat(3,1fr)}
+  .cash-head-actions{flex-wrap:wrap;justify-content:flex-end}
+}
+.opening-modal{width:min(92vw,560px)!important;max-width:560px}
+
+/* 0.13 - Chốt ngày */
+.close-day-screen>.screen-head,
+.close-day-screen>.close-date,
+.close-day-screen>.close-kpis,
+.close-day-screen>.close-reconcile,
+.close-day-screen>.card,
+.close-day-screen>.close-save{
+  grid-column:span 12;
+}
+.close-date{display:grid;gap:5px;font-size:12px;font-weight:700;max-width:240px}
+.close-date input{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#fff}
+.close-kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.close-kpis small{display:block;margin-top:5px;color:var(--muted)}
+.close-reconcile label,.close-note{display:grid;gap:6px;font-size:13px;font-weight:700}
+.close-reconcile input,.close-note textarea{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:12px;padding:11px 12px;background:#fff}
+.close-note textarea{min-height:90px;resize:vertical}
+.close-checks{display:grid;grid-template-columns:1fr 1fr;gap:4px 18px}
+.close-save{max-width:100%}
+.close-history{display:grid}
+.close-history button{border:0;background:transparent;display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--line)}
+.close-history button:last-child{border-bottom:0}
+@media(min-width:760px){
+  .close-day-screen>.screen-head,
+  .close-day-screen>.close-date,
+  .close-day-screen>.close-kpis,
+  .close-day-screen>.close-reconcile,
+  .close-day-screen>.card,
+  .close-day-screen>.close-save{
+    grid-column:2 / span 10;
+  }
+  .close-kpis{grid-template-columns:repeat(4,1fr)}
+}
+@media(max-width:560px){
+  .close-kpis{grid-template-columns:1fr 1fr}
+  .close-checks{grid-template-columns:1fr}
+  .close-date{max-width:none;width:100%}
+}
