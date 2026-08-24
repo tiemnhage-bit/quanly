@@ -1,22 +1,59 @@
 export const initialProducts = [
-  { id: 'p1', name: 'Cà phê sữa', category: 'Cà phê', price: 18000, cost: 7600, active: true },
-  { id: 'p2', name: 'Bạc xỉu', category: 'Cà phê', price: 22000, cost: 8659, active: true },
-  { id: 'p3', name: 'Trà Ổi', category: 'Trà', price: 22000, cost: 9919, active: true },
-  { id: 'p4', name: 'Matcha Latte', category: 'Matcha', price: 25000, cost: 9416, active: true },
-  { id: 'p5', name: 'Trà Chanh', category: 'Trà', price: 18000, cost: 10567, active: true },
-  { id: 'p6', name: 'Cà phê muối', category: 'Cà phê', price: 25000, cost: 10212, active: true }
+  { id: 'p1', name: "Cà Phê Đen", category: "Cà phê", price: 15000, cost: 7405, active: true },
+  { id: 'p2', name: "Cà Phê Sữa", category: "Cà phê", price: 18000, cost: 8025, active: true },
+  { id: 'p3', name: "Bạc Xỉu", category: "Cà phê", price: 22000, cost: 9084, active: true },
+  { id: 'p4', name: "Cà Phê Muối", category: "Cà phê", price: 22000, cost: 9449, active: true },
+  { id: 'p5', name: "Cà Phê Kem Dẻo BMT", category: "Cà phê", price: 25000, cost: 10449, active: true },
+  { id: 'p6', name: "Sữa Tươi Cà Phê", category: "Cà phê", price: 25000, cost: 11061, active: true },
+  { id: 'p7', name: "Trà Tắc", category: "Trà trái cây", price: 22000, cost: 10066, active: true },
+  { id: 'p8', name: "Trà Tắc 1L", category: "Trà trái cây", price: 25000, cost: 11766, active: true },
+  { id: 'p9', name: "Trà Tắc 1L3", category: "Trà trái cây", price: 25000, cost: 14430, active: true },
+  { id: 'p10', name: "Trà Chanh", category: "Trà trái cây", price: 22000, cost: 10253, active: true },
+  { id: 'p11', name: "Trà Chanh 1L", category: "Trà trái cây", price: 25000, cost: 11953, active: true },
+  { id: 'p12', name: "Trà Chanh 1L3", category: "Trà trái cây", price: 25000, cost: 13991, active: true },
+  { id: 'p13', name: "Hồng Trà", category: "Trà trái cây", price: 22000, cost: 8183, active: true },
+  { id: 'p14', name: "Hồng Trà 1L", category: "Trà trái cây", price: 29000, cost: 9883, active: true },
+  { id: 'p15', name: "Hồng Trà 1L3", category: "Trà trái cây", price: 29000, cost: 10781, active: true },
+  { id: 'p16', name: "Trà Ổi", category: "Trà trái cây", price: 25000, cost: 14738, active: true },
+  { id: 'p17', name: "Trà Ổi 1L", category: "Trà trái cây", price: 29000, cost: 16563, active: true },
+  { id: 'p18', name: "Trà Ổi 1L3", category: "Trà trái cây", price: 29000, cost: 15986, active: true },
+  { id: 'p19', name: "Trà Mãng Cầu Chanh Dây", category: "Trà trái cây", price: 25000, cost: 11575, active: true },
+  { id: 'p20', name: "Trà Mãng Cầu Chanh Dây 1L", category: "Trà trái cây", price: 32000, cost: 14450, active: true },
+  { id: 'p21', name: "Trà Mãng Cầu Chanh Dây 1L3", category: "Trà trái cây", price: 32000, cost: 16077, active: true },
+  { id: 'p22', name: "Trà Trái Cây Tươi 1L", category: "Trà trái cây", price: 35000, cost: 14496, active: true },
+  { id: 'p23', name: "Trà Trái Cây Tươi 1L3", category: "Trà trái cây", price: 35000, cost: 15525, active: true },
+  { id: 'p24', name: "Matcha Latte", category: "Matcha", price: 25000, cost: 8977, active: true },
+  { id: 'p25', name: "Matcha Oatside", category: "Matcha", price: 28000, cost: 9047, active: true },
+  { id: 'p26', name: "Matcha Kem Muối", category: "Matcha", price: 28000, cost: 10828, active: true },
+  { id: 'p27', name: "Matcha Latte Hạnh Nhân", category: "Matcha", price: 28000, cost: 12988, active: true },
+  { id: 'p28', name: "Matcha Cold Whisk", category: "Matcha", price: 28000, cost: 11318, active: true },
+  { id: 'p29', name: "Matcha Latte Yalkult", category: "Matcha", price: 28000, cost: 6848, active: true },
+  { id: 'p30', name: "Trà Sữa Truyền Thống", category: "Trà sữa", price: 25000, cost: 11661, active: true },
+  { id: 'p31', name: "Trà Sữa Matcha", category: "Trà sữa", price: 25000, cost: 12988, active: true },
+  { id: 'p32', name: "Sữa Tươi Trân Châu Đường Đen", category: "Trà sữa", price: 25000, cost: 13981, active: true },
+  { id: 'p33', name: "Nước Ép Dưa Hấu", category: "Nước ép", price: 20000, cost: 7183, active: true },
+  { id: 'p34', name: "Nước Ép Thơm", category: "Nước ép", price: 25000, cost: 15291, active: true },
+  { id: 'p35', name: "Nước Ép Cam", category: "Nước ép", price: 22000, cost: 11683, active: true },
+  { id: 'p36', name: "Nước Ép Đẹp Da", category: "Nước ép", price: 25000, cost: 15933, active: true },
+  { id: 'p37', name: "Nước Ép Đẹp Dáng", category: "Nước ép", price: 25000, cost: 0, active: true },
+  { id: 'p38', name: "Ép Cà Rốt", category: "Nước ép", price: 25000, cost: 0, active: true },
+  { id: 'p39', name: "Tô Trái Cây Mix", category: "Trái cây", price: 40000, cost: 19940, active: true },
+  { id: 'p40', name: "Ca Cao Sữa", category: "Ca cao", price: 25000, cost: 9225, active: true },
+  { id: 'p41', name: "Ca Cao Kem Muối", category: "Ca cao", price: 28000, cost: 11025, active: true },
+  { id: 'p42', name: "Ca Cao Yến Mạch", category: "Ca cao", price: 28000, cost: 3200, active: true },
+  { id: 'p43', name: "Topping Trân Chân Trắng", category: "Topping", price: 5000, cost: 3900, active: true },
 ];
 
 export const initialOrders = [
   {
     id: 'DH-240824-001', date: '2026-08-24', time: '08:12', source: 'Tại quán',
     payment: 'Chuyển khoản', status: 'Hoàn tất',
-    items: [{ productId: 'p1', name: 'Cà phê sữa', qty: 2, price: 18000, cost: 7600 }],
-    totalQty: 2, total: 36000, note: ''
+    items: [{ productId: 'p2', name: 'Cà Phê Sữa', qty: 2, price: 18000, cost: 8025 }],
+    totalQty: 2, subtotal: 36000, discount: 0, total: 36000, note: ''
   },
   {
     id: 'APP-240823-GRAB', date: '2026-08-23', time: '22:05', source: 'GrabFood',
-    payment: 'App Food', status: 'Hoàn tất', items: [], totalQty: 24, total: 550000,
+    payment: 'App Food', status: 'Hoàn tất', items: [], totalQty: 24, subtotal: 550000, discount: 0, total: 550000,
     note: 'Nhập tổng cuối ngày'
   }
 ];
