@@ -88,3 +88,55 @@
   .balance-card{grid-column:auto}
   .cash-screen .auto-note,.cash-screen .cash-tabs,.cash-screen .cash-list,.cash-screen>.secondary,.cash-screen .category-box{grid-column:span 12}
 }
+
+/* 0.11.1 - Danh mục chi phí */
+.category-list{display:grid}
+.category-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+.category-row:last-child{border-bottom:0}
+.category-row>div{display:flex;gap:6px}
+.category-row button{border:1px solid var(--line);background:#fff;border-radius:10px;padding:7px 10px}
+.category-row .category-delete{color:#b42318}
+
+/* Thu chi: desktop rộng hơn, mobile giữ nguyên */
+@media(min-width:760px){
+  .cash-screen{grid-template-columns:repeat(12,minmax(0,1fr))}
+  .cash-screen>.screen-head,
+  .cash-screen>.cash-summary,
+  .cash-screen>.auto-note,
+  .cash-screen>.cash-tabs,
+  .cash-screen>.cash-list,
+  .cash-screen>.secondary,
+  .cash-screen>.category-box{
+    grid-column:2 / span 10;
+  }
+  .cash-list{padding:0 22px}
+  .cash-row{padding:16px 0}
+}
+@media(min-width:1100px){
+  .cash-screen>.screen-head,
+  .cash-screen>.cash-summary,
+  .cash-screen>.auto-note,
+  .cash-screen>.cash-tabs,
+  .cash-screen>.cash-list,
+  .cash-screen>.secondary,
+  .cash-screen>.category-box{
+    grid-column:2 / span 10;
+  }
+}
+
+/* Sửa thanh tìm kiếm ở Nhập đơn App Food */
+.food-products-area .searchbar{
+  width:100%;
+  max-width:100%;
+  display:block;
+}
+.food-products-area .searchbar input{
+  width:100%;
+  max-width:100%;
+  box-sizing:border-box;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:12px 14px;
+  background:#fff;
+  min-height:44px;
+}
