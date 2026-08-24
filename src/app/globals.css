@@ -517,3 +517,77 @@ button:active{
   .close-checks{grid-template-columns:1fr}
   .close-date{max-width:none;width:100%}
 }
+
+/* 0.13.1 - Popup luôn hiện theo màn hình hiện tại */
+.modal-backdrop{
+  position:fixed!important;
+  inset:0!important;
+  z-index:9999!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:20px!important;
+  overflow:auto!important;
+  background:rgba(0,0,0,.34)!important;
+  overscroll-behavior:contain;
+}
+
+.modal-card{
+  position:relative!important;
+  margin:0!important;
+  width:min(92vw,620px);
+  max-height:min(88vh,820px)!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  border-radius:20px!important;
+  box-shadow:0 18px 50px rgba(0,0,0,.18);
+  transform:none!important;
+}
+
+.cash-modal{
+  width:min(92vw,900px)!important;
+  max-width:900px!important;
+}
+
+.category-modal{
+  width:min(92vw,620px)!important;
+  max-width:620px!important;
+}
+
+.opening-modal{
+  width:min(92vw,560px)!important;
+  max-width:560px!important;
+}
+
+/* Giữ đầu popup luôn nhìn thấy khi nội dung dài */
+.modal-head{
+  position:sticky;
+  top:0;
+  z-index:2;
+  background:#fff;
+  padding-bottom:10px;
+  border-bottom:1px solid var(--line);
+}
+
+/* Mobile: popup xuất hiện ngay trong viewport, neo dưới nhưng không phụ thuộc vị trí cuộn trang */
+@media(max-width:700px){
+  .modal-backdrop{
+    align-items:flex-end!important;
+    padding:0!important;
+  }
+
+  .modal-card,
+  .cash-modal,
+  .category-modal,
+  .opening-modal{
+    width:100%!important;
+    max-width:100%!important;
+    max-height:88vh!important;
+    border-radius:20px 20px 0 0!important;
+    margin:0!important;
+  }
+
+  .modal-head{
+    padding-top:4px;
+  }
+}
