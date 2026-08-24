@@ -1,10 +1,11 @@
-# Nhà Gé MVP 0.4
+# Nhà Gé MVP 0.6
 
-Bản cập nhật:
-- Nạp sẵn danh sách món và giá vốn từ file menu.xlsx người dùng cung cấp
-- Topping được xem như một sản phẩm độc lập
-- Thêm ô Giảm giá khi tạo đơn
-- Danh sách đơn hiển thị giảm giá
-- Chi tiết đơn cho phép sửa giảm giá
-- Giữ giao diện ưu tiên di động
-- Dữ liệu thử vẫn lưu trên trình duyệt, chưa nối cơ sở dữ liệu chung
+- Đăng nhập đơn giản bằng tên đăng nhập + mật khẩu.
+- Tài khoản chủ quán mặc định trên giao diện: Admin / admin123.
+- Để đăng nhập thật, tạo một người dùng trong Supabase Authentication với:
+  - Email nội bộ: admin@tiemnhage.local
+  - Password: admin123
+  - Auto confirm: bật
+- Sau đó đăng nhập Admin trên mọi thiết bị để dùng chung dữ liệu.
+- Dữ liệu món và đơn được lưu trong bảng app_states theo tài khoản.
+- Bản tiếp theo sẽ thêm mục Chủ quán tạo tài khoản nhân viên.

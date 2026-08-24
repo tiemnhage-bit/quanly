@@ -1,15 +1,21 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { initialProducts, initialOrders } from '@/lib/mockData';
+import { initialProducts } from '@/lib/mockData';
+import { supabase, supabaseReady } from '@/lib/supabase';
 
 const fmt = (n) => new Intl.NumberFormat('vi-VN').format(Number(n || 0)) + 'đ';
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
 export default function NhaGeApp() {
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [dataReady, setDataReady] = useState(false);
+  const [syncState, setSyncState] = useState('idle');
+  const [syncError, setSyncError] = useState('');
   const [screen, setScreen] = useState('home');
   const [orderTab, setOrderTab] = useState('new');
-  const [orders, setOrders] = useState(initialOrders);
+  const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState(initialProducts);
   const [cart, setCart] = useState([]);
   const [payment, setPayment] = useState('Tiền mặt');
@@ -18,14 +24,49 @@ export default function NhaGeApp() {
   const [foodForm, setFoodForm] = useState({ date: todayISO(), app: 'GrabFood', totalQty: '', total: '', note: '' });
 
   useEffect(() => {
-    const savedOrders = localStorage.getItem('nha-ge-orders-v04');
-    const savedProducts = localStorage.getItem('nha-ge-products-v04');
-    if (savedOrders) setOrders(JSON.parse(savedOrders));
-    if (savedProducts) setProducts(JSON.parse(savedProducts));
+    if (!supabaseReady || !supabase) { setAuthLoading(false); return; }
+    let alive = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (alive) { setUser(data.session?.user || null); setAuthLoading(false); }
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+      if (!session?.user) { setDataReady(false); setOrders([]); setProducts(initialProducts); }
+    });
+    return () => { alive = false; listener.subscription.unsubscribe(); };
   }, []);
 
-  useEffect(() => { localStorage.setItem('nha-ge-orders-v04', JSON.stringify(orders)); }, [orders]);
-  useEffect(() => { localStorage.setItem('nha-ge-products-v04', JSON.stringify(products)); }, [products]);
+  useEffect(() => {
+    if (!user || !supabase) return;
+    let alive = true;
+    setDataReady(false); setSyncState('saving'); setSyncError('');
+    (async () => {
+      const { data, error } = await supabase.from('app_states').select('products,orders').eq('user_id', user.id).maybeSingle();
+      if (!alive) return;
+      if (error) { setSyncState('error'); setSyncError(error.message); return; }
+      if (data) {
+        setProducts(Array.isArray(data.products) && data.products.length ? data.products : initialProducts);
+        setOrders(Array.isArray(data.orders) ? data.orders : []);
+      } else {
+        const { error: createError } = await supabase.from('app_states').insert({ user_id:user.id, products:initialProducts, orders:[] });
+        if (createError) { setSyncState('error'); setSyncError(createError.message); return; }
+        setProducts(initialProducts); setOrders([]);
+      }
+      setDataReady(true); setSyncState('saved');
+    })();
+    return () => { alive = false; };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user || !supabase || !dataReady) return;
+    setSyncState('saving');
+    const timer = setTimeout(async () => {
+      const { error } = await supabase.from('app_states').upsert({ user_id:user.id, products, orders, updated_at:new Date().toISOString() });
+      if (error) { setSyncState('error'); setSyncError(error.message); }
+      else { setSyncState('saved'); setSyncError(''); }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [products, orders, user?.id, dataReady]);
 
   const dayOrders = useMemo(() => orders.filter(o => o.date === todayISO() && o.status !== 'Đã hủy'), [orders]);
   const todayRevenue = dayOrders.reduce((s, o) => s + Number(o.total || 0), 0);
@@ -35,76 +76,61 @@ export default function NhaGeApp() {
   const knownCostToday = dayOrders.reduce((sum,o)=>sum+(o.items||[]).reduce((s,i)=>s+Number(i.cost||0)*Number(i.qty||0),0),0);
 
   function addProduct(p) {
-    setCart(prev => {
-      const found = prev.find(x => x.id === p.id);
-      if (found) return prev.map(x => x.id === p.id ? { ...x, qty: x.qty + 1 } : x);
-      return [...prev, { ...p, qty: 1 }];
-    });
+    setCart(prev => { const found = prev.find(x => x.id === p.id); if (found) return prev.map(x => x.id === p.id ? { ...x, qty: x.qty + 1 } : x); return [...prev, { ...p, qty: 1 }]; });
   }
-
-  function changeQty(id, delta) {
-    setCart(prev => prev.map(x => x.id === id ? { ...x, qty: Math.max(0, x.qty + delta) } : x).filter(x => x.qty > 0));
-  }
-
+  function changeQty(id, delta) { setCart(prev => prev.map(x => x.id === id ? { ...x, qty: Math.max(0, x.qty + delta) } : x).filter(x => x.qty > 0)); }
   function completeOrder() {
     if (!cart.length) return alert('Chưa có món trong đơn.');
     const subtotal = cart.reduce((s, x) => s + x.price * x.qty, 0);
     const discountValue = Math.max(0, Math.min(Number(discount || 0), subtotal));
-    const total = subtotal - discountValue;
-    const totalQty = cart.reduce((s, x) => s + x.qty, 0);
-    const now = new Date();
-    const order = {
-      id: `DH-${Date.now()}`, date: todayISO(),
-      time: now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-      source: 'Tại quán', payment, status: 'Hoàn tất',
-      items: cart.map(x => ({ productId:x.id, name:x.name, qty:x.qty, price:x.price, cost:x.cost || 0 })),
-      totalQty, subtotal, discount: discountValue, total, note: ''
-    };
-    setOrders(prev => [order, ...prev]);
-    setCart([]);
-    setDiscount('');
-    setOrderTab('list');
+    const total = subtotal - discountValue; const totalQty = cart.reduce((s, x) => s + x.qty, 0); const now = new Date();
+    const order = { id:`DH-${Date.now()}`, date:todayISO(), time:now.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'}), source:'Tại quán', payment, status:'Hoàn tất', items:cart.map(x=>({productId:x.id,name:x.name,qty:x.qty,price:x.price,cost:x.cost||0})), totalQty, subtotal, discount:discountValue, total, note:'' };
+    setOrders(prev => [order, ...prev]); setCart([]); setDiscount(''); setOrderTab('list');
   }
-
   function saveFoodOrder(e) {
-    e.preventDefault();
-    if (!foodForm.totalQty || !foodForm.total) return alert('Vui lòng nhập tổng số ly và doanh thu thực nhận.');
-    const order = {
-      id: `APP-${Date.now()}`, date: foodForm.date,
-      time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-      source: foodForm.app, payment: 'App Food', status: 'Hoàn tất', items: [],
-      totalQty: Number(foodForm.totalQty), subtotal: Number(foodForm.total), discount: 0, total: Number(foodForm.total), note: foodForm.note || 'Nhập tổng cuối ngày'
-    };
-    setOrders(prev => [order, ...prev]);
-    setFoodForm({ date: todayISO(), app: 'GrabFood', totalQty: '', total: '', note: '' });
-    setScreen('order'); setOrderTab('list');
+    e.preventDefault(); if (!foodForm.totalQty || !foodForm.total) return alert('Vui lòng nhập tổng số ly và doanh thu thực nhận.');
+    const order = { id:`APP-${Date.now()}`, date:foodForm.date, time:new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'}), source:foodForm.app, payment:'App Food', status:'Hoàn tất', items:[], totalQty:Number(foodForm.totalQty), subtotal:Number(foodForm.total), discount:0, total:Number(foodForm.total), note:foodForm.note||'Nhập tổng cuối ngày' };
+    setOrders(prev => [order, ...prev]); setFoodForm({ date:todayISO(), app:'GrabFood', totalQty:'', total:'', note:'' }); setScreen('order'); setOrderTab('list');
   }
-
-  function cancelOrder(id) { setOrders(prev => prev.map(o => o.id === id ? { ...o, status: 'Đã hủy' } : o)); setSelectedOrder(null); }
+  function cancelOrder(id) { setOrders(prev => prev.map(o => o.id === id ? { ...o, status:'Đã hủy' } : o)); setSelectedOrder(null); }
   function saveOrderEdit(updated) { setOrders(prev => prev.map(o => o.id === updated.id ? updated : o)); setSelectedOrder(null); }
+  async function signOut(){ if (supabase) await supabase.auth.signOut(); }
+
+  if (authLoading) return <LoadingScreen text="Đang kiểm tra tài khoản…" />;
+  if (!supabaseReady) return <SetupScreen />;
+  if (!user) return <AuthScreen />;
+  if (!dataReady && syncState !== 'error') return <LoadingScreen text="Đang tải dữ liệu quán…" />;
+  if (syncState === 'error' && !dataReady) return <SyncErrorScreen message={syncError} />;
 
   return <div className="app-shell">
-    <header className="topbar"><div><div className="brand">TIỆM NHÀ GÉ</div><div className="date">Quản lý quán · Bản 0.4</div></div><button className="icon-btn" onClick={() => setScreen('more')}>⋯</button></header>
+    <header className="topbar"><div><div className="brand">TIỆM NHÀ GÉ</div><div className="date">Quản lý quán · Bản 0.6 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn" onClick={() => setScreen('more')}>⋯</button></header>
     <main>
       {screen === 'home' && <Home todayRevenue={todayRevenue} dayOrders={dayOrders} todayQty={todayQty} cashToday={cashToday} bankToday={bankToday} knownCostToday={knownCostToday} go={setScreen} openOrders={() => {setScreen('order');setOrderTab('list')}} />}
       {screen === 'order' && <OrdersScreen products={products.filter(p=>p.active!==false)} tab={orderTab} setTab={setOrderTab} cart={cart} addProduct={addProduct} changeQty={changeQty} payment={payment} setPayment={setPayment} discount={discount} setDiscount={setDiscount} completeOrder={completeOrder} orders={orders} openOrder={setSelectedOrder} goFood={() => setScreen('foodapp')} />}
       {screen === 'foodapp' && <FoodAppForm form={foodForm} setForm={setFoodForm} onSubmit={saveFoodOrder} back={() => {setScreen('order');setOrderTab('list')}} />}
       {screen === 'products' && <ProductManager products={products} setProducts={setProducts} back={()=>setScreen('more')} />}
-      {screen === 'stock' && <Stock />}
-      {screen === 'cash' && <Cash />}
-      {screen === 'reports' && <Reports orders={orders} products={products} />}
-      {screen === 'more' && <More go={setScreen} />}
+      {screen === 'stock' && <Stock />}{screen === 'cash' && <Cash />}{screen === 'reports' && <Reports orders={orders} products={products} />}
+      {screen === 'more' && <More go={setScreen} user={user} onSignOut={signOut} syncState={syncState} />}
     </main>
-    <nav className="bottom-nav">
-      <Nav active={screen==='home'} icon="⌂" label="Trang chủ" onClick={()=>setScreen('home')} />
-      <Nav active={screen==='order'} icon="＋" label="Bán hàng" onClick={()=>setScreen('order')} />
-      <Nav active={screen==='stock'} icon="▦" label="Kho" onClick={()=>setScreen('stock')} />
-      <Nav active={screen==='cash'} icon="₫" label="Thu chi" onClick={()=>setScreen('cash')} />
-      <Nav active={screen==='reports'} icon="▤" label="Báo cáo" onClick={()=>setScreen('reports')} />
-    </nav>
+    <nav className="bottom-nav"><Nav active={screen==='home'} icon="⌂" label="Trang chủ" onClick={()=>setScreen('home')} /><Nav active={screen==='order'} icon="＋" label="Bán hàng" onClick={()=>setScreen('order')} /><Nav active={screen==='stock'} icon="▦" label="Kho" onClick={()=>setScreen('stock')} /><Nav active={screen==='cash'} icon="₫" label="Thu chi" onClick={()=>setScreen('cash')} /><Nav active={screen==='reports'} icon="▤" label="Báo cáo" onClick={()=>setScreen('reports')} /></nav>
     {selectedOrder && <OrderDrawer order={selectedOrder} onClose={()=>setSelectedOrder(null)} onCancel={cancelOrder} onSave={saveOrderEdit} />}
   </div>;
 }
+
+function AuthScreen(){
+  const [username,setUsername]=useState('Admin'); const [password,setPassword]=useState('admin123'); const [busy,setBusy]=useState(false); const [message,setMessage]=useState('');
+  async function submit(e){ e.preventDefault(); setBusy(true); setMessage('');
+    const normalized = username.trim().toLowerCase();
+    const email = normalized === 'admin' ? 'admin@tiemnhage.local' : `${normalized}@tiemnhage.local`;
+    const {error}=await supabase.auth.signInWithPassword({email,password});
+    if(error) setMessage('Sai tên đăng nhập hoặc mật khẩu.');
+    setBusy(false);
+  }
+  return <div className="auth-shell"><div className="auth-card"><div className="auth-logo">GÉ</div><h1>Quản lý quán</h1><p>Đăng nhập để dùng chung dữ liệu trên điện thoại và máy tính.</p><form className="auth-form" onSubmit={submit}><label>Tên đăng nhập<input required value={username} onChange={e=>setUsername(e.target.value)} autoCapitalize="none" /></label><label>Mật khẩu<input type="password" required minLength="6" value={password} onChange={e=>setPassword(e.target.value)} /></label>{message&&<div className="auth-message">{message}</div>}<button className="primary full" disabled={busy}>{busy?'Đang đăng nhập…':'Đăng nhập'}</button></form><p className="hint">Tài khoản chủ quán ban đầu: <b>Admin</b>. Sau khi kết nối dữ liệu, nên đổi mật khẩu mặc định.</p></div></div>
+}
+function LoadingScreen({text}){ return <div className="auth-shell"><div className="auth-card center"><div className="spinner"></div><strong>{text}</strong></div></div> }
+function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.6 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
+function SyncErrorScreen({message}){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa tải được dữ liệu</h1><p>Hãy kiểm tra đã chạy file <b>supabase.sql</b> trong Supabase chưa.</p><div className="auth-message">{message}</div></div></div> }
 
 function Nav({active,icon,label,onClick}) { return <button className={'nav-item '+(active?'active':'')} onClick={onClick}><span>{icon}</span><small>{label}</small></button> }
 
@@ -168,4 +194,4 @@ function OrderDrawer({order,onClose,onCancel,onSave}) {
 function Stock(){return <section className="screen"><div className="screen-head"><div><h2>Kho</h2><p>Một chi nhánh dùng kho chung</p></div><button className="primary small">+ Phiếu nhập hàng</button></div><div className="card stock-list">{[['Ly 500ml','125 cái'],['Ly 1L','46 cái'],['Matcha','850 g'],['Ổi','3,2 kg']].map(([n,v])=><div className="stock-row" key={n}><strong>{n}</strong><span>{v}</span></div>)}</div><button className="secondary full">Kiểm kê kho</button></section>}
 function Cash(){return <section className="screen"><h2>Thu chi</h2><div className="grid-2"><div className="card"><div className="muted">TIỀN VÀO</div><div className="money">40.000.000đ</div></div><div className="card"><div className="muted">TIỀN RA</div><div className="money">35.000.000đ</div></div></div><div className="card"><div className="section-title">Danh mục chi</div><div className="tag-list"><span>Mua nguyên liệu</span><span>Nhân viên</span><span>Mặt bằng</span><span>Điện nước</span><span>Quảng cáo</span><span>Khác</span></div><p className="hint">Có danh mục mặc định và chủ quán có thể tự thêm.</p></div></section>}
 function Reports({orders}){const valid=orders.filter(o=>o.status!=='Đã hủy'); const revenue=valid.reduce((s,o)=>s+Number(o.total||0),0); return <section className="screen"><h2>Báo cáo</h2><div className="card"><div className="muted">TỔNG DOANH THU ĐANG GHI NHẬN</div><div className="big-number">{fmt(revenue)}</div></div><div className="report-menu"><button>Kết quả kinh doanh <span>›</span></button><button>Sản phẩm bán ra <span>›</span></button><button>Nguồn bán <span>›</span></button><button>Chênh lệch kho <span>›</span></button></div></section>}
-function More({go}){return <section className="screen"><h2>Thêm</h2><div className="report-menu"><button onClick={()=>go('foodapp')}>Nhập đơn từ App Food <span>›</span></button><button onClick={()=>go('products')}>Món & giá vốn <span>›</span></button><button>Nguyên liệu <span>›</span></button><button>Cài đặt danh mục chi <span>›</span></button></div></section>}
+function More({go,user,onSignOut,syncState}){return <section className="screen"><h2>Thêm</h2><div className="card account-card"><div><div className="muted">TÀI KHOẢN</div><strong>Admin · Chủ quán</strong><small>{syncState==='saving'?'Đang đồng bộ dữ liệu…':syncState==='error'?'Có lỗi đồng bộ':'Dữ liệu đã đồng bộ'}</small></div><button className="secondary" onClick={onSignOut}>Đăng xuất</button></div><div className="report-menu"><button onClick={()=>go('foodapp')}>Nhập đơn từ App Food <span>›</span></button><button onClick={()=>go('products')}>Món & giá vốn <span>›</span></button><button>Nguyên liệu <span>›</span></button><button>Cài đặt danh mục chi <span>›</span></button></div></section>}
