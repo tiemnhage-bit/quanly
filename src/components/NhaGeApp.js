@@ -228,7 +228,7 @@ export default function NhaGeApp() {
   if (syncState === 'error' && !dataReady) return <SyncErrorScreen message={syncError} />;
 
   return <div className="app-shell">
-    <header className="topbar"><div><div className="brand">TIỆM NHÀ GÉ</div><div className="date">Quản lý quán · Bản 0.12.2 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn" onClick={() => setScreen('more')}>⋯</button></header>
+    <header className="topbar"><div><div className="brand">TIỆM NHÀ GÉ</div><div className="date">Quản lý quán · Bản 0.12.1.2 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn" onClick={() => setScreen('more')}>⋯</button></header>
     <main>
       {screen === 'home' && <Home todayRevenue={todayRevenue} dayOrders={dayOrders} todayQty={todayQty} cashToday={cashToday} bankToday={bankToday} knownCostToday={knownCostToday} ingredients={ingredients} go={setScreen} openOrders={() => {setScreen('order');setOrderTab('list')}} />}
       {screen === 'order' && <OrdersScreen products={products.filter(p=>p.active!==false)} tab={orderTab} setTab={setOrderTab} cart={cart} addProduct={addProduct} changeQty={changeQty} payment={payment} setPayment={setPayment} discount={discount} setDiscount={setDiscount} completeOrder={completeOrder} orders={orders} openOrder={setSelectedOrder} goFood={() => setScreen('foodapp')} />}
@@ -254,7 +254,7 @@ function AuthScreen(){
   return <div className="auth-shell"><div className="auth-card"><div className="auth-logo">GÉ</div><h1>Quản lý quán</h1><p>Đăng nhập để dùng chung dữ liệu trên điện thoại và máy tính.</p><form className="auth-form" onSubmit={submit}><label>Tên đăng nhập<input required value={username} onChange={e=>setUsername(e.target.value)} autoCapitalize="none" /></label><label>Mật khẩu<input type="password" required minLength="6" value={password} onChange={e=>setPassword(e.target.value)} /></label>{message&&<div className="auth-message">{message}</div>}<button className="primary full" disabled={busy}>{busy?'Đang đăng nhập…':'Đăng nhập'}</button></form><p className="hint">Tài khoản chủ quán ban đầu: <b>Admin</b>. Sau khi kết nối dữ liệu, nên đổi mật khẩu mặc định.</p></div></div>
 }
 function LoadingScreen({text}){ return <div className="auth-shell"><div className="auth-card center"><div className="spinner"></div><strong>{text}</strong></div></div> }
-function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.12.2 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
+function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.12.1.2 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
 function SyncErrorScreen({message}){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa tải được dữ liệu</h1><p>Hãy kiểm tra đã chạy file <b>supabase.sql</b> trong Supabase chưa.</p><div className="auth-message">{message}</div></div></div> }
 
 function Nav({active,icon,label,onClick}) { return <button className={'nav-item '+(active?'active':'')} onClick={onClick}><span>{icon}</span><small>{label}</small></button> }
@@ -540,7 +540,7 @@ function Cash({orders,receipts,transactions,setTransactions,categories,setCatego
       </div>)}
     </div>
 
-    {showCategory&&<div className="card category-box">
+    {showCategory&&<div className="card category-box" id="expense-category-box">
       <div className="category-list">
         {categories.map(c=><div className="category-row" key={c}>
           <strong>{c}</strong>
@@ -580,21 +580,28 @@ function Cash({orders,receipts,transactions,setTransactions,categories,setCatego
 }
 
 function Reports({orders,products,receipts=[],transactions=[]}){
-  const [month,setMonth]=useState(todayISO().slice(0,7));
+  const today=todayISO();
+  const [viewMode,setViewMode]=useState('month');
+  const [month,setMonth]=useState(today.slice(0,7));
+  const [day,setDay]=useState(today);
   const [tab,setTab]=useState('overview');
 
-  const validOrders=(orders||[]).filter(o=>o.status!=='Đã hủy' && String(o.date||'').startsWith(month));
-  const monthReceipts=(receipts||[]).filter(r=>String(r.date||'').startsWith(month));
-  const monthTransactions=(transactions||[]).filter(t=>String(t.date||'').startsWith(month));
+  const dateMatch=(date)=>{
+    const d=String(date||'');
+    return viewMode==='day' ? d===day : d.startsWith(month);
+  };
+
+  const validOrders=(orders||[]).filter(o=>o.status!=='Đã hủy' && dateMatch(o.date));
+  const filteredReceipts=(receipts||[]).filter(r=>dateMatch(r.date));
+  const filteredTransactions=(transactions||[]).filter(t=>dateMatch(t.date));
 
   const revenue=validOrders.reduce((s,o)=>s+Number(o.total||0),0);
   const grossSales=validOrders.reduce((s,o)=>s+Number(o.subtotal??o.total??0),0);
   const discounts=validOrders.reduce((s,o)=>s+Number(o.discount||0),0);
   const knownCost=validOrders.reduce((sum,o)=>sum+(o.items||[]).reduce((s,i)=>s+Number(i.cost||0)*Number(i.qty||0),0),0);
-  const manualExpense=monthTransactions.filter(x=>x.type==='Chi').reduce((s,x)=>s+Number(x.amount||0),0);
-  const purchaseOut=monthReceipts.reduce((s,x)=>s+Number(x.total||0),0);
-  const otherIncome=monthTransactions.filter(x=>x.type==='Thu').reduce((s,x)=>s+Number(x.amount||0),0);
-
+  const manualExpense=filteredTransactions.filter(x=>x.type==='Chi').reduce((s,x)=>s+Number(x.amount||0),0);
+  const purchaseOut=filteredReceipts.reduce((s,x)=>s+Number(x.total||0),0);
+  const otherIncome=filteredTransactions.filter(x=>x.type==='Thu').reduce((s,x)=>s+Number(x.amount||0),0);
   const operatingProfit=revenue-knownCost-manualExpense;
   const cashIn=revenue+otherIncome;
   const cashOut=purchaseOut+manualExpense;
@@ -621,16 +628,75 @@ function Reports({orders,products,receipts=[],transactions=[]}){
   const sourceRows=Object.entries(bySource).map(([name,v])=>({name,...v})).sort((a,b)=>b.revenue-a.revenue);
 
   const expenseRows={};
-  monthTransactions.filter(x=>x.type==='Chi').forEach(x=>{
+  filteredTransactions.filter(x=>x.type==='Chi').forEach(x=>{
     const key=x.category||'Khác';
     expenseRows[key]=(expenseRows[key]||0)+Number(x.amount||0);
   });
   const expenseList=Object.entries(expenseRows).map(([name,amount])=>({name,amount})).sort((a,b)=>b.amount-a.amount);
 
+  // Doanh thu theo ngày trong tháng đang chọn
+  const monthOrders=(orders||[]).filter(o=>o.status!=='Đã hủy' && String(o.date||'').startsWith(month));
+  const dailyMap={};
+  monthOrders.forEach(o=>{
+    const d=String(o.date||'').slice(-2);
+    dailyMap[d]=(dailyMap[d]||0)+Number(o.total||0);
+  });
+  const daysInMonth=(()=>{
+    const [y,m]=month.split('-').map(Number);
+    return new Date(y,m,0).getDate();
+  })();
+  const dailyRows=Array.from({length:daysInMonth},(_,i)=>{
+    const d=String(i+1).padStart(2,'0');
+    return {day:d,value:Number(dailyMap[d]||0)};
+  });
+  const maxDaily=Math.max(1,...dailyRows.map(x=>x.value));
+
+  // So sánh nguồn bán theo tháng gần đây (6 tháng)
+  const buildRecentMonths=()=>{
+    const [y0,m0]=month.split('-').map(Number);
+    const arr=[];
+    for(let i=5;i>=0;i--){
+      const d=new Date(y0,m0-1-i,1);
+      arr.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+    }
+    return arr;
+  };
+  const recentMonths=buildRecentMonths();
+  const knownSources=['Tại quán','Grab Food','Shopee Food','Green Food','Be Food','Khác'];
+  const sourceMonthData={};
+  knownSources.forEach(s=>sourceMonthData[s]={});
+  (orders||[]).filter(o=>o.status!=='Đã hủy').forEach(o=>{
+    const ym=String(o.date||'').slice(0,7);
+    if(!recentMonths.includes(ym))return;
+    const src=knownSources.includes(o.source)?o.source:'Khác';
+    sourceMonthData[src][ym]=(sourceMonthData[src][ym]||0)+Number(o.total||0);
+  });
+  const maxSourceMonth=Math.max(1,...knownSources.flatMap(s=>recentMonths.map(m=>Number(sourceMonthData[s][m]||0))));
+
+  const monthLabel=(ym)=>{
+    const [y,m]=ym.split('-');
+    return `T${Number(m)}/${y.slice(-2)}`;
+  };
+
   return <section className="screen report-screen">
     <div className="screen-head report-head">
-      <div><h2>Báo cáo</h2><p>Tổng hợp tình hình kinh doanh theo tháng</p></div>
-      <label className="month-picker">Tháng<input type="month" value={month} onChange={e=>setMonth(e.target.value)}/></label>
+      <div><h2>Báo cáo</h2><p>Theo dõi doanh thu, lợi nhuận và dòng tiền</p></div>
+      <div className="report-filter">
+        <div className="segmented period-switch">
+          <button className={viewMode==='day'?'active':''} onClick={()=>setViewMode('day')}>Theo ngày</button>
+          <button className={viewMode==='month'?'active':''} onClick={()=>setViewMode('month')}>Theo tháng</button>
+        </div>
+        {viewMode==='day'
+          ?<label className="date-box"><span>Ngày xem</span><input type="date" value={day} onChange={e=>setDay(e.target.value)}/></label>
+          :<label className="date-box"><span>Tháng xem</span><select value={month} onChange={e=>setMonth(e.target.value)}>
+            {Array.from({length:12},(_,i)=>{
+              const y=new Date().getFullYear();
+              const val=`${y}-${String(i+1).padStart(2,'0')}`;
+              return <option key={val} value={val}>{`Tháng ${i+1}/${y}`}</option>
+            })}
+          </select></label>
+        }
+      </div>
     </div>
 
     <div className="segmented report-tabs">
@@ -641,11 +707,24 @@ function Reports({orders,products,receipts=[],transactions=[]}){
     </div>
 
     {tab==='overview'&&<>
-      <div className="report-kpis">
-        <div className="card"><div className="muted">DOANH THU</div><div className="money">{fmt(revenue)}</div></div>
-        <div className="card"><div className="muted">GIÁ VỐN ĐÃ BIẾT</div><div className="money">{fmt(knownCost)}</div></div>
-        <div className="card"><div className="muted">CHI PHÍ KHÁC</div><div className="money">{fmt(manualExpense)}</div></div>
-        <div className="card"><div className="muted">LỢI NHUẬN TẠM TÍNH</div><div className={'money '+(operatingProfit<0?'negative':'')}>{operatingProfit<0?'-':''}{fmt(Math.abs(operatingProfit))}</div></div>
+      <div className="report-kpis colorful-kpis">
+        <div className="card kpi-card kpi-orange"><div className="muted">DOANH THU</div><div className="money">{fmt(revenue)}</div></div>
+        <div className="card kpi-card kpi-blue"><div className="muted">GIÁ VỐN ĐÃ BIẾT</div><div className="money">{fmt(knownCost)}</div></div>
+        <div className="card kpi-card kpi-purple"><div className="muted">CHI PHÍ KHÁC</div><div className="money">{fmt(manualExpense)}</div></div>
+        <div className="card kpi-card kpi-green"><div className="muted">LỢI NHUẬN TẠM TÍNH</div><div className={'money '+(operatingProfit<0?'negative':'')}>{operatingProfit<0?'-':''}{fmt(Math.abs(operatingProfit))}</div></div>
+      </div>
+
+      <div className="card revenue-chart-card">
+        <div className="chart-head">
+          <div><div className="section-title">Doanh thu từng ngày</div><p>So sánh doanh thu trong tháng {month.split('-')[1]}/{month.split('-')[0]}</p></div>
+          <strong>{fmt(monthOrders.reduce((s,o)=>s+Number(o.total||0),0))}</strong>
+        </div>
+        <div className="bar-chart daily-chart">
+          {dailyRows.map(x=><div className="bar-col" key={x.day} title={`Ngày ${x.day}: ${fmt(x.value)}`}>
+            <div className="bar-wrap"><div className="bar-value" style={{height:`${Math.max(x.value?6:0,(x.value/maxDaily)*100)}%`}}></div></div>
+            <small>{Number(x.day)}</small>
+          </div>)}
+        </div>
       </div>
 
       <div className="card report-breakdown">
@@ -661,7 +740,7 @@ function Reports({orders,products,receipts=[],transactions=[]}){
 
       <div className="card report-breakdown">
         <div className="section-title">Chi phí theo nhóm</div>
-        {expenseList.length?expenseList.map(x=><div className="summary-line" key={x.name}><span>{x.name}</span><strong>{fmt(x.amount)}</strong></div>):<div className="empty">Chưa có khoản chi thủ công trong tháng.</div>}
+        {expenseList.length?expenseList.map(x=><div className="summary-line" key={x.name}><span>{x.name}</span><strong>{fmt(x.amount)}</strong></div>):<div className="empty">Chưa có khoản chi thủ công trong kỳ.</div>}
       </div>
     </>}
 
@@ -670,25 +749,46 @@ function Reports({orders,products,receipts=[],transactions=[]}){
       {productRows.length?<div className="report-table">
         <div className="report-tr report-th"><span>Sản phẩm</span><span>SL</span><span>Doanh thu</span><span>Lãi gộp</span></div>
         {productRows.map(x=><div className="report-tr" key={x.name}><span>{x.name}</span><span>{x.qty}</span><span>{fmt(x.revenue)}</span><span>{fmt(x.profit)}</span></div>)}
-      </div>:<div className="empty">Chưa có dữ liệu sản phẩm trong tháng.</div>}
+      </div>:<div className="empty">Chưa có dữ liệu sản phẩm trong kỳ.</div>}
     </div>}
 
-    {tab==='sources'&&<div className="card report-table-card">
-      <div className="section-title">Nguồn bán</div>
-      {sourceRows.length?<div className="report-table">
-        <div className="report-tr report-th report-source"><span>Nguồn</span><span>Đơn</span><span>SL</span><span>Doanh thu</span></div>
-        {sourceRows.map(x=><div className="report-tr report-source" key={x.name}><span>{x.name}</span><span>{x.orders}</span><span>{x.qty}</span><span>{fmt(x.revenue)}</span></div>)}
-      </div>:<div className="empty">Chưa có dữ liệu nguồn bán trong tháng.</div>}
-    </div>}
-
-    {tab==='cash'&&<>
-      <div className="report-kpis">
-        <div className="card"><div className="muted">TIỀN VÀO</div><div className="money">{fmt(cashIn)}</div></div>
-        <div className="card"><div className="muted">TIỀN RA</div><div className="money">{fmt(cashOut)}</div></div>
-        <div className="card"><div className="muted">MUA HÀNG</div><div className="money">{fmt(purchaseOut)}</div></div>
-        <div className="card"><div className="muted">CHÊNH LỆCH DÒNG TIỀN</div><div className={'money '+(cashNet<0?'negative':'')}>{cashNet<0?'-':''}{fmt(Math.abs(cashNet))}</div></div>
+    {tab==='sources'&&<>
+      <div className="card source-chart-card">
+        <div className="chart-head">
+          <div><div className="section-title">So sánh nguồn bán 6 tháng</div><p>Chiều cao thể hiện doanh thu theo từng nguồn bán</p></div>
+        </div>
+        <div className="source-month-grid">
+          {recentMonths.map(ym=><div className="source-month" key={ym}>
+            <div className="source-bars">
+              {knownSources.map((s,idx)=>{
+                const val=Number(sourceMonthData[s][ym]||0);
+                return <div className={`source-bar source-${idx}`} key={s} title={`${s} · ${monthLabel(ym)}: ${fmt(val)}`} style={{height:`${Math.max(val?7:0,(val/maxSourceMonth)*100)}%`}}></div>
+              })}
+            </div>
+            <small>{monthLabel(ym)}</small>
+          </div>)}
+        </div>
+        <div className="source-legend">
+          {knownSources.map((s,idx)=><span key={s}><i className={`legend-dot source-${idx}`}></i>{s}</span>)}
+        </div>
       </div>
 
+      <div className="card report-table-card">
+        <div className="section-title">Nguồn bán trong kỳ đang xem</div>
+        {sourceRows.length?<div className="report-table">
+          <div className="report-tr report-th report-source"><span>Nguồn</span><span>Đơn</span><span>SL</span><span>Doanh thu</span></div>
+          {sourceRows.map(x=><div className="report-tr report-source" key={x.name}><span>{x.name}</span><span>{x.orders}</span><span>{x.qty}</span><span>{fmt(x.revenue)}</span></div>)}
+        </div>:<div className="empty">Chưa có dữ liệu nguồn bán trong kỳ.</div>}
+      </div>
+    </>}
+
+    {tab==='cash'&&<>
+      <div className="report-kpis colorful-kpis">
+        <div className="card kpi-card kpi-green"><div className="muted">TIỀN VÀO</div><div className="money">{fmt(cashIn)}</div></div>
+        <div className="card kpi-card kpi-red"><div className="muted">TIỀN RA</div><div className="money">{fmt(cashOut)}</div></div>
+        <div className="card kpi-card kpi-blue"><div className="muted">MUA HÀNG</div><div className="money">{fmt(purchaseOut)}</div></div>
+        <div className="card kpi-card kpi-orange"><div className="muted">CHÊNH LỆCH DÒNG TIỀN</div><div className={'money '+(cashNet<0?'negative':'')}>{cashNet<0?'-':''}{fmt(Math.abs(cashNet))}</div></div>
+      </div>
       <div className="card report-breakdown">
         <div className="section-title">Dòng tiền</div>
         <div className="summary-line"><span>Tiền từ bán hàng</span><strong>+{fmt(revenue)}</strong></div>

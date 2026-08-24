@@ -198,3 +198,61 @@
   .report-tabs button{min-width:90px}
   .report-kpis{grid-template-columns:1fr 1fr}
 }
+
+/* 0.12.1 - Bộ lọc ngày/tháng đẹp hơn */
+.report-filter{display:grid;gap:8px;min-width:260px}
+.period-switch{grid-template-columns:1fr 1fr}
+.date-box{display:grid;gap:5px;font-size:12px;font-weight:700}
+.date-box input,.date-box select{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#fff;color:var(--text)}
+.date-box select{appearance:auto}
+
+/* KPI có màu */
+.kpi-card{position:relative;overflow:hidden}
+.kpi-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px}
+.kpi-orange{background:#fff8ef}.kpi-orange::before{background:#f58a1f}
+.kpi-blue{background:#f3f8ff}.kpi-blue::before{background:#4d86d9}
+.kpi-purple{background:#faf5ff}.kpi-purple::before{background:#9364c7}
+.kpi-green{background:#f3fbf6}.kpi-green::before{background:#2f9e63}
+.kpi-red{background:#fff5f4}.kpi-red::before{background:#d15a4e}
+
+/* Biểu đồ doanh thu ngày */
+.chart-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
+.chart-head .section-title{margin-bottom:3px}
+.chart-head p{margin:0;color:var(--muted);font-size:12px}
+.chart-head>strong{font-size:18px}
+.bar-chart{display:flex;align-items:end;gap:5px;height:210px;margin-top:18px;padding:0 2px;overflow-x:auto}
+.bar-col{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:18px;flex:1;height:100%}
+.bar-wrap{height:175px;width:100%;display:flex;align-items:end;background:#f3f3f3;border-radius:7px 7px 3px 3px;overflow:hidden}
+.bar-value{width:100%;background:linear-gradient(180deg,#f7a64e,#f58a1f);border-radius:7px 7px 0 0}
+.bar-col small{font-size:10px;color:var(--muted)}
+
+/* Biểu đồ nguồn bán */
+.source-month-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;height:230px;align-items:end;margin-top:18px}
+.source-month{display:flex;flex-direction:column;gap:7px;align-items:center;height:100%}
+.source-bars{height:195px;width:100%;display:flex;gap:3px;align-items:end;justify-content:center}
+.source-bar{width:11px;border-radius:5px 5px 0 0}
+.source-month small{font-size:11px;color:var(--muted)}
+.source-0{background:#f58a1f}
+.source-1{background:#35a36d}
+.source-2{background:#e85c83}
+.source-3{background:#4d86d9}
+.source-4{background:#f0c34a}
+.source-5{background:#8c71c1}
+.source-legend{display:flex;flex-wrap:wrap;gap:10px 16px;margin-top:14px}
+.source-legend span{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
+.legend-dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+
+/* Danh mục chi phí: đảm bảo bấm được và hiển thị đúng */
+.cash-head-actions{position:relative;z-index:3}
+.cash-head-actions button{pointer-events:auto}
+.category-box{position:relative;z-index:2}
+
+/* Mobile */
+@media(max-width:700px){
+  .report-filter{width:100%;min-width:0}
+  .report-head{gap:12px}
+  .source-month-grid{gap:5px}
+  .source-bar{width:7px}
+  .bar-chart{height:190px}
+  .bar-wrap{height:155px}
+}
