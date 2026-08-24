@@ -228,14 +228,16 @@ export default function NhaGeApp() {
   if (syncState === 'error' && !dataReady) return <SyncErrorScreen message={syncError} />;
 
   return <div className="app-shell">
-    <header className="topbar"><div><div className="brand">TIỆM NHÀ GÉ</div><div className="date">Quản lý quán · Bản 0.12.1.2 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn" onClick={() => setScreen('more')}>⋯</button></header>
+    <header className="topbar"><div><div className="brand">TIỆM NHÀ GÉ</div><div className="date">Quản lý quán · Bản 0.12.2.2.2 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn" onClick={() => setScreen('more')}>⋯</button></header>
     <main>
+      <div className="page-transition" key={screen}>
       {screen === 'home' && <Home todayRevenue={todayRevenue} dayOrders={dayOrders} todayQty={todayQty} cashToday={cashToday} bankToday={bankToday} knownCostToday={knownCostToday} ingredients={ingredients} go={setScreen} openOrders={() => {setScreen('order');setOrderTab('list')}} />}
       {screen === 'order' && <OrdersScreen products={products.filter(p=>p.active!==false)} tab={orderTab} setTab={setOrderTab} cart={cart} addProduct={addProduct} changeQty={changeQty} payment={payment} setPayment={setPayment} discount={discount} setDiscount={setDiscount} completeOrder={completeOrder} orders={orders} openOrder={setSelectedOrder} goFood={() => setScreen('foodapp')} />}
       {screen === 'foodapp' && <FoodAppForm form={foodForm} setForm={setFoodForm} products={products.filter(p=>p.active!==false)} cart={foodCart} addProduct={addFoodProduct} changeQty={changeFoodQty} onSubmit={saveFoodOrder} back={() => {setScreen('order');setOrderTab('list')}} />}
       {screen === 'products' && <ProductManager products={products} setProducts={setProducts} ingredients={ingredients} back={()=>setScreen('more')} />}
       {screen === 'stock' && <Stock ingredients={ingredients} setIngredients={setIngredients} receipts={stockReceipts} setReceipts={setStockReceipts} counts={stockCounts} setCounts={setStockCounts} adjustments={stockAdjustments} setAdjustments={setStockAdjustments} />}{screen === 'cash' && <Cash orders={orders} receipts={stockReceipts} transactions={cashTransactions} setTransactions={setCashTransactions} categories={expenseCategories} setCategories={setExpenseCategories} />}{screen === 'reports' && <Reports orders={orders} products={products} receipts={stockReceipts} transactions={cashTransactions} />}
       {screen === 'more' && <More go={setScreen} user={user} onSignOut={signOut} syncState={syncState} />}
+      </div>
     </main>
     <nav className="bottom-nav"><Nav active={screen==='home'} icon="⌂" label="Trang chủ" onClick={()=>setScreen('home')} /><Nav active={screen==='order'} icon="＋" label="Bán hàng" onClick={()=>setScreen('order')} /><Nav active={screen==='stock'} icon="▦" label="Kho" onClick={()=>setScreen('stock')} /><Nav active={screen==='cash'} icon="₫" label="Thu chi" onClick={()=>setScreen('cash')} /><Nav active={screen==='reports'} icon="▤" label="Báo cáo" onClick={()=>setScreen('reports')} /></nav>
     {selectedOrder && <OrderDrawer order={selectedOrder} onClose={()=>setSelectedOrder(null)} onCancel={cancelOrder} onSave={saveOrderEdit} />}
@@ -254,7 +256,7 @@ function AuthScreen(){
   return <div className="auth-shell"><div className="auth-card"><div className="auth-logo">GÉ</div><h1>Quản lý quán</h1><p>Đăng nhập để dùng chung dữ liệu trên điện thoại và máy tính.</p><form className="auth-form" onSubmit={submit}><label>Tên đăng nhập<input required value={username} onChange={e=>setUsername(e.target.value)} autoCapitalize="none" /></label><label>Mật khẩu<input type="password" required minLength="6" value={password} onChange={e=>setPassword(e.target.value)} /></label>{message&&<div className="auth-message">{message}</div>}<button className="primary full" disabled={busy}>{busy?'Đang đăng nhập…':'Đăng nhập'}</button></form><p className="hint">Tài khoản chủ quán ban đầu: <b>Admin</b>. Sau khi kết nối dữ liệu, nên đổi mật khẩu mặc định.</p></div></div>
 }
 function LoadingScreen({text}){ return <div className="auth-shell"><div className="auth-card center"><div className="spinner"></div><strong>{text}</strong></div></div> }
-function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.12.1.2 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
+function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.12.2.2.2 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
 function SyncErrorScreen({message}){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa tải được dữ liệu</h1><p>Hãy kiểm tra đã chạy file <b>supabase.sql</b> trong Supabase chưa.</p><div className="auth-message">{message}</div></div></div> }
 
 function Nav({active,icon,label,onClick}) { return <button className={'nav-item '+(active?'active':'')} onClick={onClick}><span>{icon}</span><small>{label}</small></button> }
@@ -433,6 +435,7 @@ function Cash({orders,receipts,transactions,setTransactions,categories,setCatego
   const [showCategory,setShowCategory]=useState(false);
   const [form,setForm]=useState({type:'Chi',category:'Khác',amount:'',payment:'Chuyển khoản',date:todayISO(),note:''});
   const [newCategory,setNewCategory]=useState('');
+  const [dragCategory,setDragCategory]=useState(null);
 
   const validOrders=(orders||[]).filter(o=>o.status!=='Đã hủy');
   const orderIncome=validOrders.map(o=>({
@@ -499,11 +502,25 @@ function Cash({orders,receipts,transactions,setTransactions,categories,setCatego
     setCategories(prev=>prev.filter(c=>c!==name));
   }
 
+  function moveCategory(target){
+    if(!dragCategory||dragCategory===target)return;
+    setCategories(prev=>{
+      const next=[...prev];
+      const from=next.indexOf(dragCategory);
+      const to=next.indexOf(target);
+      if(from<0||to<0)return prev;
+      const [picked]=next.splice(from,1);
+      next.splice(to,0,picked);
+      return next;
+    });
+    setDragCategory(null);
+  }
+
   return <section className="screen cash-screen">
     <div className="screen-head cash-head">
       <div><h2>Thu chi</h2><p>Theo dõi tiền thực tế vào và ra khỏi quán</p></div>
       <div className="cash-head-actions">
-        <button className="secondary small" onClick={()=>setShowCategory(v=>!v)}>Danh mục chi phí</button>
+        <button className="secondary small" onClick={()=>setShowCategory(true)}>Danh mục chi phí</button>
         <button className="primary small" onClick={()=>setShowForm(true)}>+ Ghi thu chi</button>
       </div>
     </div>
@@ -540,22 +557,33 @@ function Cash({orders,receipts,transactions,setTransactions,categories,setCatego
       </div>)}
     </div>
 
-    {showCategory&&<div className="card category-box" id="expense-category-box">
-      <div className="category-list">
-        {categories.map(c=><div className="category-row" key={c}>
-          <strong>{c}</strong>
-          <div>
-            <button type="button" onClick={()=>renameCategory(c)}>Sửa</button>
-            <button type="button" className="category-delete" onClick={()=>deleteCategory(c)}>Xóa</button>
-          </div>
-        </div>)}
+    {showCategory&&<Modal title="Danh mục chi phí" close={()=>setShowCategory(false)} className="category-modal">
+      <div className="category-modal-body">
+        <p className="hint">Giữ và kéo nút ⋮⋮ để sắp xếp thứ tự danh mục. Thứ tự này sẽ được dùng trong ô chọn khi ghi khoản chi mới.</p>
+        <div className="category-list draggable-category-list">
+          {categories.map(c=><div
+            className={'category-row '+(dragCategory===c?'is-dragging':'')}
+            key={c}
+            draggable
+            onDragStart={()=>setDragCategory(c)}
+            onDragEnd={()=>setDragCategory(null)}
+            onDragOver={e=>e.preventDefault()}
+            onDrop={()=>moveCategory(c)}
+          >
+            <button type="button" className="drag-handle" aria-label={`Kéo ${c}`} title="Giữ và kéo để sắp xếp">⋮⋮</button>
+            <strong>{c}</strong>
+            <div className="category-actions">
+              <button type="button" onClick={()=>renameCategory(c)}>Sửa</button>
+              <button type="button" className="category-delete" onClick={()=>deleteCategory(c)}>Xóa</button>
+            </div>
+          </div>)}
+        </div>
+        <form className="category-add" onSubmit={addCategory}>
+          <input value={newCategory} onChange={e=>setNewCategory(e.target.value)} placeholder="Thêm danh mục mới"/>
+          <button className="primary">Thêm</button>
+        </form>
       </div>
-      <form className="category-add" onSubmit={addCategory}>
-        <input value={newCategory} onChange={e=>setNewCategory(e.target.value)} placeholder="Thêm danh mục mới"/>
-        <button className="primary">Thêm</button>
-      </form>
-      <p className="hint">Đổi tên hoặc xóa danh mục chỉ ảnh hưởng danh sách chọn về sau. Giao dịch cũ vẫn giữ tên đã ghi.</p>
-    </div>}
+    </Modal>}
 
     {showForm&&<Modal title="Ghi thu chi" close={()=>setShowForm(false)} className="cash-modal">
       <form className="form-card plain" onSubmit={saveTransaction}>
@@ -724,6 +752,11 @@ function Reports({orders,products,receipts=[],transactions=[]}){
             <div className="bar-wrap"><div className="bar-value" style={{height:`${Math.max(x.value?6:0,(x.value/maxDaily)*100)}%`}}></div></div>
             <small>{Number(x.day)}</small>
           </div>)}
+        </div>
+        <div className="mobile-daily-summary">
+          {dailyRows.filter(x=>x.value>0).sort((a,b)=>b.value-a.value).slice(0,5).map(x=>
+            <div key={x.day}><span>Ngày {Number(x.day)}</span><strong>{fmt(x.value)}</strong></div>
+          )}
         </div>
       </div>
 

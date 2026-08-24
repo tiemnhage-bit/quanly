@@ -256,3 +256,152 @@
   .bar-chart{height:190px}
   .bar-wrap{height:155px}
 }
+
+/* 0.12.2 - Hiệu ứng thao tác */
+button{
+  transition:transform .12s ease, box-shadow .16s ease, background-color .16s ease, border-color .16s ease, opacity .16s ease;
+  -webkit-tap-highlight-color:transparent;
+}
+button:active{
+  transform:scale(.97);
+}
+.primary:active,.secondary:active,.nav-item:active,.product:active,.chip:active{
+  transform:scale(.965);
+}
+.page-transition{
+  animation:pageIn .20s ease both;
+}
+@keyframes pageIn{
+  from{opacity:0;transform:translateY(5px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@media(prefers-reduced-motion:reduce){
+  button,.page-transition{transition:none!important;animation:none!important}
+}
+
+/* Danh mục chi phí popup + kéo thả */
+.category-modal{width:min(92vw,620px)!important;max-width:620px}
+.category-modal-body{display:grid;gap:14px}
+.draggable-category-list{max-height:56vh;overflow:auto;border:1px solid var(--line);border-radius:14px;padding:0 12px}
+.category-row{
+  display:grid;
+  grid-template-columns:36px minmax(0,1fr) auto;
+  align-items:center;
+  gap:10px;
+}
+.drag-handle{
+  width:32px;
+  height:32px;
+  border:1px solid var(--line)!important;
+  background:#f7f7f7!important;
+  border-radius:9px!important;
+  cursor:grab;
+  color:#777;
+  padding:0!important;
+  font-size:16px;
+  line-height:1;
+}
+.drag-handle:active{cursor:grabbing}
+.category-row.is-dragging{
+  opacity:.55;
+  background:var(--accent-soft);
+}
+.category-actions{display:flex;gap:6px}
+.category-add{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+.category-modal input{min-width:0;width:100%;box-sizing:border-box}
+
+/* Biểu đồ mobile: ưu tiên độ đọc */
+.mobile-daily-summary{display:none}
+@media(max-width:700px){
+  .revenue-chart-card,.source-chart-card{
+    padding-left:12px;
+    padding-right:12px;
+    overflow:hidden;
+  }
+  .chart-head{
+    display:grid;
+    gap:6px;
+  }
+  .chart-head>strong{
+    font-size:16px;
+  }
+  .daily-chart{
+    width:100%;
+    overflow-x:auto;
+    overflow-y:hidden;
+    display:flex;
+    gap:7px;
+    padding:4px 2px 8px;
+    scroll-snap-type:x proximity;
+  }
+  .daily-chart .bar-col{
+    flex:0 0 24px;
+    min-width:24px;
+    scroll-snap-align:start;
+  }
+  .daily-chart .bar-wrap{
+    width:18px;
+    margin:auto;
+  }
+  .daily-chart .bar-col small{
+    font-size:9px;
+  }
+  .mobile-daily-summary{
+    display:grid;
+    gap:7px;
+    margin-top:10px;
+    border-top:1px solid var(--line);
+    padding-top:10px;
+  }
+  .mobile-daily-summary>div{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    font-size:12px;
+  }
+
+  .source-month-grid{
+    width:620px;
+    grid-template-columns:repeat(6,92px);
+    gap:10px;
+  }
+  .source-chart-card{
+    overflow-x:auto;
+  }
+  .source-chart-card .chart-head,
+  .source-chart-card .source-legend{
+    min-width:560px;
+  }
+  .source-bars{
+    height:160px;
+  }
+  .source-month-grid{
+    height:195px;
+  }
+  .source-legend{
+    gap:8px 12px;
+    padding-bottom:5px;
+  }
+}
+@media(max-width:480px){
+  .report-kpis{
+    grid-template-columns:1fr;
+  }
+  .report-tabs{
+    width:100%;
+    overflow-x:auto;
+    display:flex;
+  }
+  .report-tabs button{
+    flex:0 0 auto;
+    min-width:96px;
+  }
+  .category-modal{
+    width:100%!important;
+    max-width:100%;
+  }
+  .category-actions button{
+    padding:6px 8px;
+    font-size:12px;
+  }
+}
