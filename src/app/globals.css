@@ -663,3 +663,16 @@ button:active{
 .bottom-nav{
   z-index:100!important;
 }
+
+/* 0.14 - Nhân viên */
+.employee-nav{grid-template-columns:repeat(2,minmax(0,1fr))!important;max-width:520px!important}
+.employee-screen>.screen-head,.employee-screen>.employee-create-btn,.employee-screen>.employee-list{grid-column:span 12}
+.employee-create-btn{max-width:320px}
+.employee-list{padding:0 16px}
+.employee-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 0;border-bottom:1px solid var(--line)}
+.employee-row:last-child{border-bottom:0}
+.employee-row>div{display:flex;flex-direction:column;gap:4px}
+.employee-row small{color:var(--muted)}
+.employee-row .status{width:max-content}
+.employee-modal{width:min(92vw,560px)!important;max-width:560px!important}
+@media(min-width:760px){.employee-screen>.screen-head,.employee-screen>.employee-create-btn,.employee-screen>.employee-list{grid-column:2/span 10}}

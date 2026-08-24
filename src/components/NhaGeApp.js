@@ -50,6 +50,9 @@ function applyImportedRecipes(currentProducts=[], mergedIngredients=[]) {
 
 export default function NhaGeApp() {
   const [user, setUser] = useState(null);
+  const [role,setRole] = useState('admin');
+  const [dataOwnerId,setDataOwnerId] = useState(null);
+  const [memberInfo,setMemberInfo] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [dataReady, setDataReady] = useState(false);
   const [syncState, setSyncState] = useState('idle');
@@ -84,7 +87,7 @@ export default function NhaGeApp() {
     });
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user || null);
-      if (!session?.user) { setDataReady(false); setOrders([]); setProducts(initialProducts); setIngredients([]); setStockReceipts([]); setStockCounts([]); setStockAdjustments([]); setCashTransactions([]); setExpenseCategories(defaultExpenseCategories); setOpeningBalances({cash:0,bank:0}); setDayClosings([]); }
+      if (!session?.user) { setRole('admin'); setDataOwnerId(null); setMemberInfo(null); setDataReady(false); setOrders([]); setProducts(initialProducts); setIngredients([]); setStockReceipts([]); setStockCounts([]); setStockAdjustments([]); setCashTransactions([]); setExpenseCategories(defaultExpenseCategories); setOpeningBalances({cash:0,bank:0}); setDayClosings([]); }
     });
     return () => { alive = false; listener.subscription.unsubscribe(); };
   }, []);
@@ -94,7 +97,22 @@ export default function NhaGeApp() {
     let alive = true;
     setDataReady(false); setSyncState('saving'); setSyncError('');
     (async () => {
-      const { data, error } = await supabase.from('app_states').select('products,orders,ingredients,stock_receipts,stock_counts,stock_adjustments,cash_transactions,expense_categories,opening_balances,day_closings').eq('user_id', user.id).maybeSingle();
+      const { data: membership, error: memberError } = await supabase.from('shop_members').select('owner_user_id,username,display_name,role,active').eq('member_user_id', user.id).maybeSingle();
+      if (!alive) return;
+      if (memberError) { setSyncState('error'); setSyncError(memberError.message); return; }
+      if (membership && membership.active === false) {
+        await supabase.auth.signOut();
+        alert('Tài khoản nhân viên đang bị khóa.');
+        return;
+      }
+      const ownerId = membership?.owner_user_id || user.id;
+      const resolvedRole = membership?.role || 'admin';
+      setDataOwnerId(ownerId);
+      setRole(resolvedRole);
+      setMemberInfo(membership || null);
+      setScreen(resolvedRole === 'admin' ? 'home' : 'order');
+
+      const { data, error } = await supabase.from('app_states').select('products,orders,ingredients,stock_receipts,stock_counts,stock_adjustments,cash_transactions,expense_categories,opening_balances,day_closings').eq('user_id', ownerId).maybeSingle();
       if (!alive) return;
       if (error) { setSyncState('error'); setSyncError(error.message); return; }
       if (data) {
@@ -115,7 +133,7 @@ export default function NhaGeApp() {
       } else {
         const firstIngredients = mergeImportedIngredients([]);
         const firstProducts = applyImportedRecipes(initialProducts, firstIngredients);
-        const { error: createError } = await supabase.from('app_states').insert({ user_id:user.id, products:firstProducts, orders:[], ingredients:firstIngredients, stock_receipts:[], stock_counts:[], stock_adjustments:[], cash_transactions:[], expense_categories:defaultExpenseCategories, opening_balances:{cash:0,bank:0}, day_closings:[] });
+        const { error: createError } = await supabase.from('app_states').insert({ user_id:ownerId, products:firstProducts, orders:[], ingredients:firstIngredients, stock_receipts:[], stock_counts:[], stock_adjustments:[], cash_transactions:[], expense_categories:defaultExpenseCategories, opening_balances:{cash:0,bank:0}, day_closings:[] });
         if (createError) { setSyncState('error'); setSyncError(createError.message); return; }
         setProducts(firstProducts); setIngredients(firstIngredients); setOrders([]);
       }
@@ -125,15 +143,15 @@ export default function NhaGeApp() {
   }, [user?.id]);
 
   useEffect(() => {
-    if (!user || !supabase || !dataReady) return;
+    if (!user || !supabase || !dataReady || !dataOwnerId) return;
     setSyncState('saving');
     const timer = setTimeout(async () => {
-      const { error } = await supabase.from('app_states').upsert({ user_id:user.id, products, orders, ingredients, stock_receipts:stockReceipts, stock_counts:stockCounts, stock_adjustments:stockAdjustments, cash_transactions:cashTransactions, expense_categories:expenseCategories, opening_balances:openingBalances, day_closings:dayClosings, updated_at:new Date().toISOString() });
+      const { error } = await supabase.from('app_states').upsert({ user_id:dataOwnerId, products, orders, ingredients, stock_receipts:stockReceipts, stock_counts:stockCounts, stock_adjustments:stockAdjustments, cash_transactions:cashTransactions, expense_categories:expenseCategories, opening_balances:openingBalances, day_closings:dayClosings, updated_at:new Date().toISOString() });
       if (error) { setSyncState('error'); setSyncError(error.message); }
       else { setSyncState('saved'); setSyncError(''); }
     }, 500);
     return () => clearTimeout(timer);
-  }, [products, orders, ingredients, stockReceipts, stockCounts, stockAdjustments, cashTransactions, expenseCategories, openingBalances, dayClosings, user?.id, dataReady]);
+  }, [products, orders, ingredients, stockReceipts, stockCounts, stockAdjustments, cashTransactions, expenseCategories, openingBalances, dayClosings, user?.id, dataOwnerId, dataReady]);
 
   const dayOrders = useMemo(() => orders.filter(o => o.date === todayISO() && o.status !== 'Đã hủy'), [orders]);
   const todayRevenue = dayOrders.reduce((s, o) => s + Number(o.total || 0), 0);
@@ -233,26 +251,34 @@ export default function NhaGeApp() {
   if (syncState === 'error' && !dataReady) return <SyncErrorScreen message={syncError} />;
 
   return <div className="app-shell">
-    <header className="topbar"><div><div className="brand">TIỆM NHÀ GÉ</div><div className="date">Quản lý quán · Bản 0.13.2 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn" onClick={() => setScreen('more')}>⋯</button></header>
+    <header className="topbar"><div><div className="brand">TIỆM NHÀ GÉ</div><div className="date">Quản lý quán · Bản 0.14 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn" onClick={() => setScreen('more')}>⋯</button></header>
     <main>
       <div className="page-transition" key={screen}>
-      {screen === 'home' && <Home todayRevenue={todayRevenue} dayOrders={dayOrders} todayQty={todayQty} cashToday={cashToday} bankToday={bankToday} knownCostToday={knownCostToday} ingredients={ingredients} closings={dayClosings} go={setScreen} openOrders={() => {setScreen('order');setOrderTab('list')}} />}
-      {screen === 'order' && <OrdersScreen products={products.filter(p=>p.active!==false)} tab={orderTab} setTab={setOrderTab} cart={cart} addProduct={addProduct} changeQty={changeQty} payment={payment} setPayment={setPayment} discount={discount} setDiscount={setDiscount} completeOrder={completeOrder} orders={orders} openOrder={setSelectedOrder} goFood={() => setScreen('foodapp')} />}
-      {screen === 'foodapp' && <FoodAppForm form={foodForm} setForm={setFoodForm} products={products.filter(p=>p.active!==false)} cart={foodCart} addProduct={addFoodProduct} changeQty={changeFoodQty} onSubmit={saveFoodOrder} back={() => {setScreen('order');setOrderTab('list')}} />}
-      {screen === 'products' && <ProductManager products={products} setProducts={setProducts} ingredients={ingredients} back={()=>setScreen('more')} />}
-      {screen === 'stock' && <Stock ingredients={ingredients} setIngredients={setIngredients} receipts={stockReceipts} setReceipts={setStockReceipts} counts={stockCounts} setCounts={setStockCounts} adjustments={stockAdjustments} setAdjustments={setStockAdjustments} />}{screen === 'cash' && <Cash orders={orders} receipts={stockReceipts} transactions={cashTransactions} setTransactions={setCashTransactions} categories={expenseCategories} setCategories={setExpenseCategories} openingBalances={openingBalances} setOpeningBalances={setOpeningBalances} />}{screen === 'reports' && <Reports orders={orders} products={products} receipts={stockReceipts} transactions={cashTransactions} />}
-      {screen === 'closeDay' && <CloseDay orders={orders} receipts={stockReceipts} transactions={cashTransactions} closings={dayClosings} setClosings={setDayClosings} back={()=>setScreen('home')} />}
-      {screen === 'more' && <More go={setScreen} user={user} onSignOut={signOut} syncState={syncState} />}
+      {role==='admin' && screen === 'home' && <Home todayRevenue={todayRevenue} dayOrders={dayOrders} todayQty={todayQty} cashToday={cashToday} bankToday={bankToday} knownCostToday={knownCostToday} ingredients={ingredients} closings={dayClosings} go={setScreen} openOrders={() => {setScreen('order');setOrderTab('list')}} />}
+      {screen === 'order' && <OrdersScreen products={products.filter(p=>p.active!==false)} tab={orderTab} setTab={setOrderTab} cart={cart} addProduct={addProduct} changeQty={changeQty} payment={payment} setPayment={setPayment} discount={discount} setDiscount={setDiscount} completeOrder={completeOrder} orders={orders} openOrder={setSelectedOrder} goFood={() => role==='admin' && setScreen('foodapp')} />}
+      {role==='admin' && screen === 'foodapp' && <FoodAppForm form={foodForm} setForm={setFoodForm} products={products.filter(p=>p.active!==false)} cart={foodCart} addProduct={addFoodProduct} changeQty={changeFoodQty} onSubmit={saveFoodOrder} back={() => {setScreen('order');setOrderTab('list')}} />}
+      {role==='admin' && screen === 'products' && <ProductManager products={products} setProducts={setProducts} ingredients={ingredients} back={()=>setScreen('more')} />}
+      {role==='admin' && screen === 'stock' && <Stock ingredients={ingredients} setIngredients={setIngredients} receipts={stockReceipts} setReceipts={setStockReceipts} counts={stockCounts} setCounts={setStockCounts} adjustments={stockAdjustments} setAdjustments={setStockAdjustments} />}
+      {role==='admin' && screen === 'cash' && <Cash orders={orders} receipts={stockReceipts} transactions={cashTransactions} setTransactions={setCashTransactions} categories={expenseCategories} setCategories={setExpenseCategories} openingBalances={openingBalances} setOpeningBalances={setOpeningBalances} />}
+      {role==='admin' && screen === 'reports' && <Reports orders={orders} products={products} receipts={stockReceipts} transactions={cashTransactions} />}
+      {role==='admin' && screen === 'closeDay' && <CloseDay orders={orders} receipts={stockReceipts} transactions={cashTransactions} closings={dayClosings} setClosings={setDayClosings} back={()=>setScreen('home')} />}
+      {role==='admin' && screen === 'employees' && <EmployeeAccounts user={user} back={()=>setScreen('more')} />}
+      {screen === 'more' && <More role={role} memberInfo={memberInfo} go={setScreen} user={user} onSignOut={signOut} syncState={syncState} />}
       </div>
     </main>
-    <nav className="bottom-nav">
-      <Nav active={screen==='stock'} icon="▦" label="Kho" onClick={()=>setScreen('stock')} />
-      <Nav active={screen==='order'} icon="＋" label="Order" onClick={()=>setScreen('order')} />
-      <Nav active={screen==='home'} icon="⌂" label="Trang chủ" onClick={()=>setScreen('home')} />
-      <Nav active={screen==='cash'} icon="₫" label="Thu chi" onClick={()=>setScreen('cash')} />
-      <Nav active={screen==='reports'} icon="▤" label="Báo cáo" onClick={()=>setScreen('reports')} />
+    <nav className={'bottom-nav '+(role!=='admin'?'employee-nav':'')}>
+      {role==='admin'?<>
+        <Nav active={screen==='stock'} icon="▦" label="Kho" onClick={()=>setScreen('stock')} />
+        <Nav active={screen==='order'} icon="＋" label="Order" onClick={()=>setScreen('order')} />
+        <Nav active={screen==='home'} icon="⌂" label="Trang chủ" onClick={()=>setScreen('home')} />
+        <Nav active={screen==='cash'} icon="₫" label="Thu chi" onClick={()=>setScreen('cash')} />
+        <Nav active={screen==='reports'} icon="▤" label="Báo cáo" onClick={()=>setScreen('reports')} />
+      </>:<>
+        <Nav active={screen==='order'} icon="＋" label="Order" onClick={()=>setScreen('order')} />
+        <Nav active={screen==='more'} icon="☰" label="Tài khoản" onClick={()=>setScreen('more')} />
+      </>}
     </nav>
-    {selectedOrder && <OrderDrawer order={selectedOrder} onClose={()=>setSelectedOrder(null)} onCancel={cancelOrder} onSave={saveOrderEdit} />}
+    {selectedOrder && <OrderDrawer order={selectedOrder} onClose={()=>setSelectedOrder(null)} onCancel={role==='admin'?cancelOrder:null} onSave={role==='admin'?saveOrderEdit:null} readOnly={role!=='admin'} />}
   </div>;
 }
 
@@ -268,7 +294,7 @@ function AuthScreen(){
   return <div className="auth-shell"><div className="auth-card"><div className="auth-logo">GÉ</div><h1>Quản lý quán</h1><p>Đăng nhập để dùng chung dữ liệu trên điện thoại và máy tính.</p><form className="auth-form" onSubmit={submit}><label>Tên đăng nhập<input required value={username} onChange={e=>setUsername(e.target.value)} autoCapitalize="none" /></label><label>Mật khẩu<input type="password" required minLength="6" value={password} onChange={e=>setPassword(e.target.value)} /></label>{message&&<div className="auth-message">{message}</div>}<button className="primary full" disabled={busy}>{busy?'Đang đăng nhập…':'Đăng nhập'}</button></form><p className="hint">Tài khoản chủ quán ban đầu: <b>Admin</b>. Sau khi kết nối dữ liệu, nên đổi mật khẩu mặc định.</p></div></div>
 }
 function LoadingScreen({text}){ return <div className="auth-shell"><div className="auth-card center"><div className="spinner"></div><strong>{text}</strong></div></div> }
-function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.13.2 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
+function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.14 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
 function SyncErrorScreen({message}){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa tải được dữ liệu</h1><p>Hãy kiểm tra đã chạy file <b>supabase.sql</b> trong Supabase chưa.</p><div className="auth-message">{message}</div></div></div> }
 
 function Nav({active,icon,label,onClick}) { return <button className={'nav-item '+(active?'active':'')} onClick={onClick}><span>{icon}</span><small>{label}</small></button> }
@@ -407,13 +433,13 @@ function FoodAppForm({form,setForm,products,cart,addProduct,changeQty,onSubmit,b
   </section>
 }
 
-function OrderDrawer({order,onClose,onCancel,onSave}) {
+function OrderDrawer({order,onClose,onCancel,onSave,readOnly=false}) {
   const [draft,setDraft]=useState({...order, subtotal:Number(order.subtotal ?? order.total ?? 0), discount:Number(order.discount || 0)});
   const draftSubtotal = Number(draft.subtotal ?? draft.total ?? 0);
   const draftDiscount = Math.max(0, Math.min(Number(draft.discount || 0), draftSubtotal));
   const draftTotal = draftSubtotal - draftDiscount;
   function save(){ onSave({...draft, discount:draftDiscount, total:draftTotal}); }
-  return <div className="overlay" onClick={onClose}><aside className="drawer" onClick={e=>e.stopPropagation()}><div className="drawer-head"><div><small>MÃ ĐƠN</small><strong>{order.id}</strong></div><button onClick={onClose}>×</button></div><div className="detail-grid"><div><small>Ngày bán</small><strong>{draft.date}</strong></div><div><small>Nguồn</small><strong>{draft.source}</strong></div><label><small>Số ly / sản phẩm</small><input type="number" value={draft.totalQty} onChange={e=>setDraft({...draft,totalQty:Number(e.target.value)})}/></label><label><small>Tạm tính</small><input type="number" value={draftSubtotal} onChange={e=>setDraft({...draft,subtotal:Number(e.target.value)})}/></label><label><small>Giảm giá</small><input type="number" min="0" value={draft.discount||0} onChange={e=>setDraft({...draft,discount:Number(e.target.value)})}/></label><div><small>Khách thanh toán</small><strong>{fmt(draftTotal)}</strong></div></div>{draft.items?.length>0&&<div className="card flat"><div className="section-title">Chi tiết món</div>{draft.items.map((x,i)=><div className="summary-line" key={i}><span>{x.name} × {x.qty}</span><strong>{fmt(x.price*x.qty)}</strong></div>)}</div>}<label className="drawer-note"><small>Ghi chú</small><textarea value={draft.note||''} onChange={e=>setDraft({...draft,note:e.target.value})}/></label><button className="primary full" onClick={save}>Lưu chỉnh sửa</button>{order.status!=='Đã hủy'&&<button className="danger full" onClick={()=>onCancel(order.id)}>Hủy đơn</button>}</aside></div> }
+  return <div className="overlay" onClick={onClose}><aside className="drawer" onClick={e=>e.stopPropagation()}><div className="drawer-head"><div><small>MÃ ĐƠN</small><strong>{order.id}</strong></div><button onClick={onClose}>×</button></div><div className="detail-grid"><div><small>Ngày bán</small><strong>{draft.date}</strong></div><div><small>Nguồn</small><strong>{draft.source}</strong></div><label><small>Số ly / sản phẩm</small><input type="number" value={draft.totalQty} readOnly={readOnly} onChange={e=>setDraft({...draft,totalQty:Number(e.target.value)})}/></label><label><small>Tạm tính</small><input type="number" value={draftSubtotal} readOnly={readOnly} onChange={e=>setDraft({...draft,subtotal:Number(e.target.value)})}/></label><label><small>Giảm giá</small><input type="number" min="0" value={draft.discount||0} readOnly={readOnly} onChange={e=>setDraft({...draft,discount:Number(e.target.value)})}/></label><div><small>Khách thanh toán</small><strong>{fmt(draftTotal)}</strong></div></div>{draft.items?.length>0&&<div className="card flat"><div className="section-title">Chi tiết món</div>{draft.items.map((x,i)=><div className="summary-line" key={i}><span>{x.name} × {x.qty}</span><strong>{fmt(x.price*x.qty)}</strong></div>)}</div>}<label className="drawer-note"><small>Ghi chú</small><textarea value={draft.note||''} onChange={e=>setDraft({...draft,note:e.target.value})}/></label><button className="primary full" onClick={save}>Lưu chỉnh sửa</button>{order.status!=='Đã hủy'&&<button className="danger full" onClick={()=>onCancel(order.id)}>Hủy đơn</button>}</aside></div> }
 
 function Stock({ingredients,setIngredients,receipts,setReceipts,counts,setCounts,adjustments,setAdjustments}){
   const [tab,setTab]=useState('inventory'); const [modal,setModal]=useState(null);
@@ -945,4 +971,53 @@ function CloseDay({orders,receipts,transactions,closings,setClosings,back}){
 }
 
 
-function More({go,user,onSignOut,syncState}){return <section className="screen"><h2>Thêm</h2><div className="card account-card"><div><div className="muted">TÀI KHOẢN</div><strong>Admin · Chủ quán</strong><small>{syncState==='saving'?'Đang đồng bộ dữ liệu…':syncState==='error'?'Có lỗi đồng bộ':'Dữ liệu đã đồng bộ'}</small></div><button className="secondary" onClick={onSignOut}>Đăng xuất</button></div><div className="report-menu"><button onClick={()=>go('foodapp')}>Nhập đơn từ App Food <span>›</span></button><button onClick={()=>go('products')}>Món & giá vốn <span>›</span></button><button onClick={()=>go('stock')}>Nguyên liệu & kho <span>›</span></button><button onClick={()=>go('closeDay')}>Chốt ngày <span>›</span></button><button>Cài đặt danh mục chi <span>›</span></button></div></section>}
+
+function EmployeeAccounts({user,back}){
+  const [employees,setEmployees]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [showCreate,setShowCreate]=useState(false);
+  const [form,setForm]=useState({username:'',displayName:'',password:''});
+  const [busy,setBusy]=useState(false);
+
+  async function load(){
+    setLoading(true);
+    const {data,error}=await supabase.from('shop_members').select('member_user_id,username,display_name,role,active,created_at').eq('owner_user_id',user.id).order('created_at',{ascending:true});
+    if(error) alert(error.message);
+    setEmployees(data||[]);
+    setLoading(false);
+  }
+  useEffect(()=>{load();},[user?.id]);
+
+  async function createEmployee(e){
+    e.preventDefault();
+    const username=form.username.trim().toLowerCase();
+    if(!username||!form.password)return;
+    if(!/^[a-z0-9._-]+$/.test(username))return alert('Tên đăng nhập chỉ dùng chữ thường, số, dấu chấm, gạch ngang hoặc gạch dưới.');
+    setBusy(true);
+    const {data:{session}}=await supabase.auth.getSession();
+    const res=await fetch('/api/employees',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${session?.access_token||''}`},body:JSON.stringify({username,password:form.password,displayName:form.displayName.trim()||username})});
+    const data=await res.json().catch(()=>({}));
+    setBusy(false);
+    if(!res.ok)return alert(data.error||'Không tạo được tài khoản.');
+    setForm({username:'',displayName:'',password:''}); setShowCreate(false); load();
+  }
+
+  async function toggleEmployee(emp){
+    const {error}=await supabase.from('shop_members').update({active:!emp.active}).eq('member_user_id',emp.member_user_id).eq('owner_user_id',user.id);
+    if(error)return alert(error.message);
+    load();
+  }
+
+  return <section className="screen employee-screen">
+    <div className="screen-head"><div><h2>Tài khoản nhân viên</h2><p>Tạo tài khoản rồi gửi tên đăng nhập và mật khẩu cho nhân viên.</p></div><button className="secondary small" onClick={back}>← Quay lại</button></div>
+    <button className="primary full employee-create-btn" onClick={()=>setShowCreate(true)}>+ Tạo tài khoản nhân viên</button>
+    <div className="card employee-list">
+      {loading&&<div className="empty">Đang tải…</div>}
+      {!loading&&!employees.length&&<div className="empty">Chưa có tài khoản nhân viên.</div>}
+      {employees.map(emp=><div className="employee-row" key={emp.member_user_id}><div><strong>{emp.display_name||emp.username}</strong><small>Tên đăng nhập: {emp.username}</small><span className={'status '+(!emp.active?'cancel':'')}>{emp.active?'Đang hoạt động':'Đã khóa'}</span></div><button className={emp.active?'secondary':'primary'} onClick={()=>toggleEmployee(emp)}>{emp.active?'Khóa':'Mở lại'}</button></div>)}
+    </div>
+    {showCreate&&<Modal title="Tạo tài khoản nhân viên" close={()=>setShowCreate(false)} className="employee-modal"><form className="form-card plain" onSubmit={createEmployee}><label>Tên nhân viên<input value={form.displayName} onChange={e=>setForm({...form,displayName:e.target.value})} placeholder="Ví dụ: Minh"/></label><label>Tên đăng nhập<input required autoCapitalize="none" value={form.username} onChange={e=>setForm({...form,username:e.target.value})} placeholder="Ví dụ: nv01"/></label><label>Mật khẩu<input required type="password" minLength="6" value={form.password} onChange={e=>setForm({...form,password:e.target.value})} placeholder="Tối thiểu 6 ký tự"/></label><p className="hint">Nhân viên chỉ cần tên đăng nhập và mật khẩu, không cần email.</p><button className="primary full" disabled={busy}>{busy?'Đang tạo…':'Tạo tài khoản'}</button></form></Modal>}
+  </section>
+}
+
+function More({go,user,onSignOut,syncState,role='admin',memberInfo=null}){const isAdmin=role==='admin';return <section className="screen"><h2>{isAdmin?'Thêm':'Tài khoản'}</h2><div className="card account-card"><div><div className="muted">TÀI KHOẢN</div><strong>{isAdmin?'Admin · Chủ quán':`${memberInfo?.display_name||memberInfo?.username||'Nhân viên'} · Nhân viên`}</strong><small>{syncState==='saving'?'Đang đồng bộ dữ liệu…':syncState==='error'?'Có lỗi đồng bộ':'Dữ liệu đã đồng bộ'}</small></div><button className="secondary" onClick={onSignOut}>Đăng xuất</button></div>{isAdmin&&<div className="report-menu"><button onClick={()=>go('employees')}>Tài khoản nhân viên <span>›</span></button><button onClick={()=>go('foodapp')}>Nhập đơn từ App Food <span>›</span></button><button onClick={()=>go('products')}>Món & giá vốn <span>›</span></button><button onClick={()=>go('stock')}>Nguyên liệu & kho <span>›</span></button><button onClick={()=>go('closeDay')}>Chốt ngày <span>›</span></button></div>}</section>}
