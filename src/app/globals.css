@@ -676,3 +676,9 @@ button:active{
 .employee-row .status{width:max-content}
 .employee-modal{width:min(92vw,560px)!important;max-width:560px!important}
 @media(min-width:760px){.employee-screen>.screen-head,.employee-screen>.employee-create-btn,.employee-screen>.employee-list{grid-column:2/span 10}}
+
+/* 0.14.1 - Hiện/ẩn mật khẩu */
+.password-field{position:relative;width:100%}
+.password-field input{width:100%;padding-right:46px!important}
+.password-eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:36px;height:36px;border:0;background:transparent;border-radius:10px;cursor:pointer;font-size:20px;line-height:1}
+.password-eye:active{transform:translateY(-50%) scale(.92)}

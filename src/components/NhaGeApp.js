@@ -283,7 +283,7 @@ export default function NhaGeApp() {
 }
 
 function AuthScreen(){
-  const [username,setUsername]=useState('Admin'); const [password,setPassword]=useState('admin123'); const [busy,setBusy]=useState(false); const [message,setMessage]=useState('');
+  const [username,setUsername]=useState('Admin'); const [password,setPassword]=useState('admin123'); const [showPassword,setShowPassword]=useState(false); const [busy,setBusy]=useState(false); const [message,setMessage]=useState('');
   async function submit(e){ e.preventDefault(); setBusy(true); setMessage('');
     const normalized = username.trim().toLowerCase();
     const email = normalized === 'admin' ? 'admin@tiemnhage.local' : `${normalized}@tiemnhage.local`;
@@ -291,7 +291,7 @@ function AuthScreen(){
     if(error) setMessage('Sai tên đăng nhập hoặc mật khẩu.');
     setBusy(false);
   }
-  return <div className="auth-shell"><div className="auth-card"><div className="auth-logo">GÉ</div><h1>Quản lý quán</h1><p>Đăng nhập để dùng chung dữ liệu trên điện thoại và máy tính.</p><form className="auth-form" onSubmit={submit}><label>Tên đăng nhập<input required value={username} onChange={e=>setUsername(e.target.value)} autoCapitalize="none" /></label><label>Mật khẩu<input type="password" required minLength="6" value={password} onChange={e=>setPassword(e.target.value)} /></label>{message&&<div className="auth-message">{message}</div>}<button className="primary full" disabled={busy}>{busy?'Đang đăng nhập…':'Đăng nhập'}</button></form><p className="hint">Tài khoản chủ quán ban đầu: <b>Admin</b>. Sau khi kết nối dữ liệu, nên đổi mật khẩu mặc định.</p></div></div>
+  return <div className="auth-shell"><div className="auth-card"><div className="auth-logo">GÉ</div><h1>Quản lý quán</h1><p>Đăng nhập để dùng chung dữ liệu trên điện thoại và máy tính.</p><form className="auth-form" onSubmit={submit}><label>Tên đăng nhập<input required value={username} onChange={e=>setUsername(e.target.value)} autoCapitalize="none" /></label><label>Mật khẩu<div className="password-field"><input type={showPassword?'text':'password'} required value={password} onChange={e=>setPassword(e.target.value)} /><button type="button" className="password-eye" onClick={()=>setShowPassword(v=>!v)} aria-label={showPassword?'Ẩn mật khẩu':'Xem mật khẩu'}>{showPassword?'◉':'◌'}</button></div></label>{message&&<div className="auth-message">{message}</div>}<button className="primary full" disabled={busy}>{busy?'Đang đăng nhập…':'Đăng nhập'}</button></form><p className="hint">Tài khoản chủ quán ban đầu: <b>Admin</b>. Sau khi kết nối dữ liệu, nên đổi mật khẩu mặc định.</p></div></div>
 }
 function LoadingScreen({text}){ return <div className="auth-shell"><div className="auth-card center"><div className="spinner"></div><strong>{text}</strong></div></div> }
 function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.14 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
@@ -978,6 +978,7 @@ function EmployeeAccounts({user,back}){
   const [showCreate,setShowCreate]=useState(false);
   const [form,setForm]=useState({username:'',displayName:'',password:''});
   const [busy,setBusy]=useState(false);
+  const [showPassword,setShowPassword]=useState(false);
 
   async function load(){
     setLoading(true);
@@ -991,7 +992,7 @@ function EmployeeAccounts({user,back}){
   async function createEmployee(e){
     e.preventDefault();
     const username=form.username.trim().toLowerCase();
-    if(!username||!form.password)return;
+    if(!username||!form.password)return alert('Vui lòng nhập tên đăng nhập và mật khẩu.');
     if(!/^[a-z0-9._-]+$/.test(username))return alert('Tên đăng nhập chỉ dùng chữ thường, số, dấu chấm, gạch ngang hoặc gạch dưới.');
     setBusy(true);
     const {data:{session}}=await supabase.auth.getSession();
@@ -1016,7 +1017,7 @@ function EmployeeAccounts({user,back}){
       {!loading&&!employees.length&&<div className="empty">Chưa có tài khoản nhân viên.</div>}
       {employees.map(emp=><div className="employee-row" key={emp.member_user_id}><div><strong>{emp.display_name||emp.username}</strong><small>Tên đăng nhập: {emp.username}</small><span className={'status '+(!emp.active?'cancel':'')}>{emp.active?'Đang hoạt động':'Đã khóa'}</span></div><button className={emp.active?'secondary':'primary'} onClick={()=>toggleEmployee(emp)}>{emp.active?'Khóa':'Mở lại'}</button></div>)}
     </div>
-    {showCreate&&<Modal title="Tạo tài khoản nhân viên" close={()=>setShowCreate(false)} className="employee-modal"><form className="form-card plain" onSubmit={createEmployee}><label>Tên nhân viên<input value={form.displayName} onChange={e=>setForm({...form,displayName:e.target.value})} placeholder="Ví dụ: Minh"/></label><label>Tên đăng nhập<input required autoCapitalize="none" value={form.username} onChange={e=>setForm({...form,username:e.target.value})} placeholder="Ví dụ: nv01"/></label><label>Mật khẩu<input required type="password" minLength="6" value={form.password} onChange={e=>setForm({...form,password:e.target.value})} placeholder="Tối thiểu 6 ký tự"/></label><p className="hint">Nhân viên chỉ cần tên đăng nhập và mật khẩu, không cần email.</p><button className="primary full" disabled={busy}>{busy?'Đang tạo…':'Tạo tài khoản'}</button></form></Modal>}
+    {showCreate&&<Modal title="Tạo tài khoản nhân viên" close={()=>setShowCreate(false)} className="employee-modal"><form className="form-card plain" onSubmit={createEmployee}><label>Tên nhân viên<input value={form.displayName} onChange={e=>setForm({...form,displayName:e.target.value})} placeholder="Ví dụ: Minh"/></label><label>Tên đăng nhập<input required autoCapitalize="none" value={form.username} onChange={e=>setForm({...form,username:e.target.value})} placeholder="Ví dụ: nv01"/></label><label>Mật khẩu<div className="password-field"><input required type={showPassword?'text':'password'} value={form.password} onChange={e=>setForm({...form,password:e.target.value})} placeholder="Chữ hoa, chữ thường, số, @, #"/><button type="button" className="password-eye" onClick={()=>setShowPassword(v=>!v)} aria-label={showPassword?'Ẩn mật khẩu':'Xem mật khẩu'}>{showPassword?'◉':'◌'}</button></div></label><p className="hint">Nhân viên chỉ cần tên đăng nhập và mật khẩu, không cần email.</p><button className="primary full" disabled={busy}>{busy?'Đang tạo…':'Tạo tài khoản'}</button></form></Modal>}
   </section>
 }
 

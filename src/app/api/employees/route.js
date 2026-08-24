@@ -19,7 +19,7 @@ export async function POST(request){
     const username=String(body.username||'').trim().toLowerCase();
     const password=String(body.password||'');
     const displayName=String(body.displayName||username).trim();
-    if(!username||password.length<6)return Response.json({error:'Tên đăng nhập hoặc mật khẩu chưa hợp lệ.'},{status:400});
+    if(!username||!password)return Response.json({error:'Tên đăng nhập hoặc mật khẩu chưa hợp lệ.'},{status:400});
 
     const admin=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false}});
     const email=`${username}@tiemnhage.local`;
