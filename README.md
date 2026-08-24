@@ -1,13 +1,21 @@
-# Nhà Gé MVP 0.7
+# Nhà Gé MVP 0.9
 
-Bản kho thực tế:
-- Danh mục Nguyên liệu & Bao bì dùng chung toàn hệ thống.
-- Phiếu nhập chỉ chọn từ danh mục, không gõ tên tự do.
-- Kiểm kê và điều chỉnh cũng dùng cùng mã nguyên liệu.
-- Món có thể thiết lập cách trừ kho bằng cách chọn nguyên liệu từ cùng danh mục.
-- Bán món tại quán tự trừ kho nếu món đã có cách trừ kho.
-- Hủy đơn hoàn lại kho theo lượng đã trừ.
-- App Food vẫn nhập tổng cuối ngày nên chưa tự trừ nguyên liệu.
-- Dữ liệu kho đồng bộ qua Supabase giữa các thiết bị.
+Đã import dữ liệu từ file nguyên liệu người dùng cung cấp.
 
-Sau khi upload mã nguồn lên GitHub, cần chạy lại file supabase.sql một lần trong Supabase SQL Editor để thêm các cột dữ liệu kho.
+## Danh mục được nạp
+- Cà Phê Hạt — g — tồn đầu 20.000 — cảnh báo 100
+- Sữa Đặc — ml — tồn đầu 6.000 — cảnh báo 2.000
+- Sữa Tươi Vinamil — ml
+- Phindi Hạnh Nhân — ml
+- Ly Cà Phê — cái — tồn đầu 1.000 — cảnh báo 200
+- Rích Lùn — ml
+- Ly Lùn 500ml — cái
+
+## Công thức được nối với kho
+- Cà Phê Đen: Cà Phê Hạt 20g + Ly Cà Phê 1 cái
+- Cà Phê Sữa: Cà Phê Hạt 20g + Ly Cà Phê 1 cái + Sữa Đặc 30ml
+- Bạc Xỉu: Cà Phê Hạt 20g + Ly Lùn 500ml 1 cái + Sữa Đặc 20ml + Rích Lùn 10ml
+
+## Cách nhập dữ liệu
+Bản 0.9 tự gộp danh mục trên vào dữ liệu Supabase sau lần đăng nhập đầu tiên.
+Nếu một nguyên liệu cùng tên đã tồn tại thì giữ tồn hiện tại, không tạo dòng trùng.
