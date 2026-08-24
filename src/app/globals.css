@@ -140,3 +140,61 @@
   background:#fff;
   min-height:44px;
 }
+
+/* 0.12 - Thu chi desktop */
+.cash-head-actions{display:flex;gap:8px;align-items:center}
+.cash-modal{width:min(92vw,900px)!important;max-width:900px}
+.cash-modal .form-card{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.cash-modal .transaction-type{grid-column:1/-1}
+.cash-modal .form-card label{min-width:0}
+.cash-modal .form-card label:last-of-type{grid-column:1/-1}
+.cash-modal .form-card>button:last-child{grid-column:1/-1}
+.cash-modal input,.cash-modal select,.cash-modal textarea{width:100%;max-width:100%;box-sizing:border-box}
+
+/* 0.12 - Báo cáo */
+.report-head{align-items:end}
+.month-picker{display:grid;gap:5px;font-size:12px;font-weight:700}
+.month-picker input{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#fff}
+.report-tabs{grid-template-columns:repeat(4,1fr)}
+.report-kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.total-report{font-size:17px;padding-top:13px}
+.report-table{display:grid;overflow:auto}
+.report-tr{display:grid;grid-template-columns:minmax(180px,2fr) 70px 130px 130px;gap:12px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line);min-width:600px}
+.report-tr:last-child{border-bottom:0}
+.report-th{font-size:12px;color:var(--muted);font-weight:800}
+.report-source{grid-template-columns:minmax(160px,2fr) 70px 70px 140px}
+.report-tr span:not(:first-child){text-align:right}
+
+@media(min-width:760px){
+  .cash-screen>.screen-head,
+  .cash-screen>.cash-summary,
+  .cash-screen>.auto-note,
+  .cash-screen>.cash-tabs,
+  .cash-screen>.cash-list,
+  .cash-screen>.category-box{
+    grid-column:2 / span 10;
+  }
+  .report-screen>.report-head,
+  .report-screen>.report-tabs,
+  .report-screen>.report-kpis,
+  .report-screen>.report-breakdown,
+  .report-screen>.report-table-card{
+    grid-column:2 / span 10;
+  }
+  .report-kpis{grid-template-columns:repeat(4,1fr)}
+}
+@media(max-width:700px){
+  .cash-head{align-items:flex-start}
+  .cash-head-actions{width:100%;display:grid;grid-template-columns:1fr 1fr}
+  .cash-modal{width:100%!important;max-width:100%}
+  .cash-modal .form-card{grid-template-columns:1fr}
+  .cash-modal .transaction-type,.cash-modal .form-card label:last-of-type,.cash-modal .form-card>button:last-child{grid-column:auto}
+}
+@media(max-width:600px){
+  .report-head{align-items:flex-start}
+  .month-picker{width:100%}
+  .month-picker input{width:100%;box-sizing:border-box}
+  .report-tabs{overflow:auto}
+  .report-tabs button{min-width:90px}
+  .report-kpis{grid-template-columns:1fr 1fr}
+}
