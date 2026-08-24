@@ -591,3 +591,75 @@ button:active{
     padding-top:4px;
   }
 }
+
+/* 0.13.2 - Fix dứt điểm vị trí popup
+   Nguyên nhân: .page-transition có transform từ hiệu ứng chuyển trang,
+   làm position:fixed của popup bị tính theo khối nội dung thay vì viewport. */
+
+/* Không giữ transform trên khối cha của modal */
+.page-transition{
+  transform:none!important;
+  animation:pageFadeIn .18s ease both!important;
+}
+@keyframes pageFadeIn{
+  from{opacity:0}
+  to{opacity:1}
+}
+
+/* Popup luôn tính theo chính màn hình trình duyệt */
+.modal-backdrop{
+  position:fixed!important;
+  top:0!important;
+  right:0!important;
+  bottom:0!important;
+  left:0!important;
+  width:100vw!important;
+  height:100dvh!important;
+  min-height:100vh!important;
+  z-index:2147483000!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  box-sizing:border-box!important;
+  padding:16px!important;
+  margin:0!important;
+  overflow:hidden!important;
+}
+
+.modal-card,
+.cash-modal,
+.category-modal,
+.opening-modal{
+  position:relative!important;
+  top:auto!important;
+  right:auto!important;
+  bottom:auto!important;
+  left:auto!important;
+  margin:0!important;
+  max-height:calc(100dvh - 32px)!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain;
+}
+
+/* Mobile cũng hiện giữa màn hình ngay khi bấm, không neo xuống cuối trang */
+@media(max-width:700px){
+  .modal-backdrop{
+    align-items:center!important;
+    justify-content:center!important;
+    padding:12px!important;
+  }
+  .modal-card,
+  .cash-modal,
+  .category-modal,
+  .opening-modal{
+    width:100%!important;
+    max-width:560px!important;
+    max-height:calc(100dvh - 24px)!important;
+    border-radius:18px!important;
+  }
+}
+
+/* Menu chân phải luôn nằm dưới lớp popup */
+.bottom-nav{
+  z-index:100!important;
+}
