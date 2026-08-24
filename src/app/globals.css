@@ -50,3 +50,41 @@
   .compact-food-info{grid-template-columns:1fr}
   .food-current-order{padding:14px}
 }
+
+/* Sửa form App Food */
+.food-current-order label{display:grid;gap:6px}
+.food-current-order input,.food-current-order textarea,.food-current-order select{
+  width:100%;
+  max-width:100%;
+  box-sizing:border-box;
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:11px 12px;
+  background:#fff;
+}
+.food-current-order textarea{min-height:82px;resize:vertical}
+
+/* Thu chi 0.11 */
+.cash-summary{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.balance-card{grid-column:1/-1}
+.negative{color:#b42318}
+.auto-note p{margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.45}
+.cash-tabs{grid-template-columns:repeat(3,1fr)}
+.cash-list{padding:0 16px}
+.cash-row{display:flex;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
+.cash-row:last-child{border-bottom:0}
+.cash-row-main{display:flex;flex-direction:column;gap:4px;min-width:0}
+.cash-row-main small,.cash-row-main span{color:var(--muted);font-size:12px}
+.cash-row-side{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
+.cash-row-side button{border:0;background:transparent;color:#a33;font-size:12px}
+.income-money{color:#138a4b}
+.expense-money{color:#b42318}
+.category-box{display:grid;gap:12px}
+.category-add{display:grid;grid-template-columns:1fr auto;gap:8px}
+.category-add input{width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 12px}
+.transaction-type{grid-template-columns:1fr 1fr}
+@media(min-width:760px){
+  .cash-summary{grid-column:span 12;grid-template-columns:repeat(3,1fr)}
+  .balance-card{grid-column:auto}
+  .cash-screen .auto-note,.cash-screen .cash-tabs,.cash-screen .cash-list,.cash-screen>.secondary,.cash-screen .category-box{grid-column:span 12}
+}

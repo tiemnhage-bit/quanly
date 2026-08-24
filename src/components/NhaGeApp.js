@@ -68,6 +68,10 @@ export default function NhaGeApp() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [foodForm, setFoodForm] = useState({ date: todayISO(), app: 'Grab Food', total: '', note: '' });
   const [foodCart, setFoodCart] = useState([]);
+  const defaultExpenseCategories = ['Nhân viên','Mặt bằng','Điện nước','Quảng cáo','Vận chuyển','Sửa chữa','Phần mềm','Khác'];
+  const [cashTransactions,setCashTransactions] = useState([]);
+  const [expenseCategories,setExpenseCategories] = useState(defaultExpenseCategories);
+
 
   useEffect(() => {
     if (!supabaseReady || !supabase) { setAuthLoading(false); return; }
@@ -87,7 +91,7 @@ export default function NhaGeApp() {
     let alive = true;
     setDataReady(false); setSyncState('saving'); setSyncError('');
     (async () => {
-      const { data, error } = await supabase.from('app_states').select('products,orders,ingredients,stock_receipts,stock_counts,stock_adjustments').eq('user_id', user.id).maybeSingle();
+      const { data, error } = await supabase.from('app_states').select('products,orders,ingredients,stock_receipts,stock_counts,stock_adjustments,cash_transactions,expense_categories').eq('user_id', user.id).maybeSingle();
       if (!alive) return;
       if (error) { setSyncState('error'); setSyncError(error.message); return; }
       if (data) {
@@ -101,10 +105,12 @@ export default function NhaGeApp() {
         setStockReceipts(Array.isArray(data.stock_receipts) ? data.stock_receipts : []);
         setStockCounts(Array.isArray(data.stock_counts) ? data.stock_counts : []);
         setStockAdjustments(Array.isArray(data.stock_adjustments) ? data.stock_adjustments : []);
+        setCashTransactions(Array.isArray(data.cash_transactions) ? data.cash_transactions : []);
+        setExpenseCategories(Array.isArray(data.expense_categories) && data.expense_categories.length ? data.expense_categories : defaultExpenseCategories);
       } else {
         const firstIngredients = mergeImportedIngredients([]);
         const firstProducts = applyImportedRecipes(initialProducts, firstIngredients);
-        const { error: createError } = await supabase.from('app_states').insert({ user_id:user.id, products:firstProducts, orders:[], ingredients:firstIngredients, stock_receipts:[], stock_counts:[], stock_adjustments:[] });
+        const { error: createError } = await supabase.from('app_states').insert({ user_id:user.id, products:firstProducts, orders:[], ingredients:firstIngredients, stock_receipts:[], stock_counts:[], stock_adjustments:[], cash_transactions:[], expense_categories:defaultExpenseCategories });
         if (createError) { setSyncState('error'); setSyncError(createError.message); return; }
         setProducts(firstProducts); setIngredients(firstIngredients); setOrders([]);
       }
@@ -117,12 +123,12 @@ export default function NhaGeApp() {
     if (!user || !supabase || !dataReady) return;
     setSyncState('saving');
     const timer = setTimeout(async () => {
-      const { error } = await supabase.from('app_states').upsert({ user_id:user.id, products, orders, ingredients, stock_receipts:stockReceipts, stock_counts:stockCounts, stock_adjustments:stockAdjustments, updated_at:new Date().toISOString() });
+      const { error } = await supabase.from('app_states').upsert({ user_id:user.id, products, orders, ingredients, stock_receipts:stockReceipts, stock_counts:stockCounts, stock_adjustments:stockAdjustments, cash_transactions:cashTransactions, expense_categories:expenseCategories, updated_at:new Date().toISOString() });
       if (error) { setSyncState('error'); setSyncError(error.message); }
       else { setSyncState('saved'); setSyncError(''); }
     }, 500);
     return () => clearTimeout(timer);
-  }, [products, orders, ingredients, stockReceipts, stockCounts, stockAdjustments, user?.id, dataReady]);
+  }, [products, orders, ingredients, stockReceipts, stockCounts, stockAdjustments, cashTransactions, expenseCategories, user?.id, dataReady]);
 
   const dayOrders = useMemo(() => orders.filter(o => o.date === todayISO() && o.status !== 'Đã hủy'), [orders]);
   const todayRevenue = dayOrders.reduce((s, o) => s + Number(o.total || 0), 0);
@@ -222,13 +228,13 @@ export default function NhaGeApp() {
   if (syncState === 'error' && !dataReady) return <SyncErrorScreen message={syncError} />;
 
   return <div className="app-shell">
-    <header className="topbar"><div><div className="brand">TIỆM NHÀ GÉ</div><div className="date">Quản lý quán · Bản 0.10.2.2 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn" onClick={() => setScreen('more')}>⋯</button></header>
+    <header className="topbar"><div><div className="brand">TIỆM NHÀ GÉ</div><div className="date">Quản lý quán · Bản 0.11.2 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn" onClick={() => setScreen('more')}>⋯</button></header>
     <main>
       {screen === 'home' && <Home todayRevenue={todayRevenue} dayOrders={dayOrders} todayQty={todayQty} cashToday={cashToday} bankToday={bankToday} knownCostToday={knownCostToday} ingredients={ingredients} go={setScreen} openOrders={() => {setScreen('order');setOrderTab('list')}} />}
       {screen === 'order' && <OrdersScreen products={products.filter(p=>p.active!==false)} tab={orderTab} setTab={setOrderTab} cart={cart} addProduct={addProduct} changeQty={changeQty} payment={payment} setPayment={setPayment} discount={discount} setDiscount={setDiscount} completeOrder={completeOrder} orders={orders} openOrder={setSelectedOrder} goFood={() => setScreen('foodapp')} />}
       {screen === 'foodapp' && <FoodAppForm form={foodForm} setForm={setFoodForm} products={products.filter(p=>p.active!==false)} cart={foodCart} addProduct={addFoodProduct} changeQty={changeFoodQty} onSubmit={saveFoodOrder} back={() => {setScreen('order');setOrderTab('list')}} />}
       {screen === 'products' && <ProductManager products={products} setProducts={setProducts} ingredients={ingredients} back={()=>setScreen('more')} />}
-      {screen === 'stock' && <Stock ingredients={ingredients} setIngredients={setIngredients} receipts={stockReceipts} setReceipts={setStockReceipts} counts={stockCounts} setCounts={setStockCounts} adjustments={stockAdjustments} setAdjustments={setStockAdjustments} />}{screen === 'cash' && <Cash />}{screen === 'reports' && <Reports orders={orders} products={products} />}
+      {screen === 'stock' && <Stock ingredients={ingredients} setIngredients={setIngredients} receipts={stockReceipts} setReceipts={setStockReceipts} counts={stockCounts} setCounts={setStockCounts} adjustments={stockAdjustments} setAdjustments={setStockAdjustments} />}{screen === 'cash' && <Cash orders={orders} receipts={stockReceipts} transactions={cashTransactions} setTransactions={setCashTransactions} categories={expenseCategories} setCategories={setExpenseCategories} />}{screen === 'reports' && <Reports orders={orders} products={products} />}
       {screen === 'more' && <More go={setScreen} user={user} onSignOut={signOut} syncState={syncState} />}
     </main>
     <nav className="bottom-nav"><Nav active={screen==='home'} icon="⌂" label="Trang chủ" onClick={()=>setScreen('home')} /><Nav active={screen==='order'} icon="＋" label="Bán hàng" onClick={()=>setScreen('order')} /><Nav active={screen==='stock'} icon="▦" label="Kho" onClick={()=>setScreen('stock')} /><Nav active={screen==='cash'} icon="₫" label="Thu chi" onClick={()=>setScreen('cash')} /><Nav active={screen==='reports'} icon="▤" label="Báo cáo" onClick={()=>setScreen('reports')} /></nav>
@@ -248,7 +254,7 @@ function AuthScreen(){
   return <div className="auth-shell"><div className="auth-card"><div className="auth-logo">GÉ</div><h1>Quản lý quán</h1><p>Đăng nhập để dùng chung dữ liệu trên điện thoại và máy tính.</p><form className="auth-form" onSubmit={submit}><label>Tên đăng nhập<input required value={username} onChange={e=>setUsername(e.target.value)} autoCapitalize="none" /></label><label>Mật khẩu<input type="password" required minLength="6" value={password} onChange={e=>setPassword(e.target.value)} /></label>{message&&<div className="auth-message">{message}</div>}<button className="primary full" disabled={busy}>{busy?'Đang đăng nhập…':'Đăng nhập'}</button></form><p className="hint">Tài khoản chủ quán ban đầu: <b>Admin</b>. Sau khi kết nối dữ liệu, nên đổi mật khẩu mặc định.</p></div></div>
 }
 function LoadingScreen({text}){ return <div className="auth-shell"><div className="auth-card center"><div className="spinner"></div><strong>{text}</strong></div></div> }
-function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.10.2.2 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
+function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.11.2 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
 function SyncErrorScreen({message}){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa tải được dữ liệu</h1><p>Hãy kiểm tra đã chạy file <b>supabase.sql</b> trong Supabase chưa.</p><div className="auth-message">{message}</div></div></div> }
 
 function Nav({active,icon,label,onClick}) { return <button className={'nav-item '+(active?'active':'')} onClick={onClick}><span>{icon}</span><small>{label}</small></button> }
@@ -421,6 +427,132 @@ function Stock({ingredients,setIngredients,receipts,setReceipts,counts,setCounts
 
 function Modal({title,close,children}){return <div className="modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)close()}}><div className="modal-card"><div className="modal-head"><h3>{title}</h3><button onClick={close}>×</button></div>{children}</div></div>}
 
-function Cash(){return <section className="screen"><h2>Thu chi</h2><div className="grid-2"><div className="card"><div className="muted">TIỀN VÀO</div><div className="money">40.000.000đ</div></div><div className="card"><div className="muted">TIỀN RA</div><div className="money">35.000.000đ</div></div></div><div className="card"><div className="section-title">Danh mục chi</div><div className="tag-list"><span>Mua nguyên liệu</span><span>Nhân viên</span><span>Mặt bằng</span><span>Điện nước</span><span>Quảng cáo</span><span>Khác</span></div><p className="hint">Có danh mục mặc định và chủ quán có thể tự thêm.</p></div></section>}
+function Cash({orders,receipts,transactions,setTransactions,categories,setCategories}){
+  const [tab,setTab]=useState('all');
+  const [showForm,setShowForm]=useState(false);
+  const [showCategory,setShowCategory]=useState(false);
+  const [form,setForm]=useState({type:'Chi',category:'Khác',amount:'',payment:'Chuyển khoản',date:todayISO(),note:''});
+  const [newCategory,setNewCategory]=useState('');
+
+  const validOrders=(orders||[]).filter(o=>o.status!=='Đã hủy');
+  const orderIncome=validOrders.map(o=>({
+    id:'ORDER-'+o.id,
+    date:o.date,
+    type:'Thu',
+    category:o.source==='Tại quán'?'Bán hàng tại quán':'App Food',
+    amount:Number(o.total||0),
+    payment:o.payment,
+    note:o.source,
+    auto:true
+  }));
+  const receiptOut=(receipts||[]).filter(r=>Number(r.total||0)>0).map(r=>({
+    id:'RECEIPT-'+r.id,
+    date:r.date,
+    type:'Chi',
+    category:'Mua nguyên liệu',
+    amount:Number(r.total||0),
+    payment:r.payment||'Chuyển khoản',
+    note:'Phiếu nhập hàng',
+    auto:true
+  }));
+  const all=[...orderIncome,...receiptOut,...(transactions||[])].sort((a,b)=>(String(b.date)+String(b.id)).localeCompare(String(a.date)+String(a.id)));
+  const income=all.filter(x=>x.type==='Thu').reduce((s,x)=>s+Number(x.amount||0),0);
+  const outcome=all.filter(x=>x.type==='Chi').reduce((s,x)=>s+Number(x.amount||0),0);
+  const balance=income-outcome;
+
+  const shown=all.filter(x=>tab==='all'||(tab==='income'&&x.type==='Thu')||(tab==='expense'&&x.type==='Chi'));
+
+  function saveTransaction(e){
+    e.preventDefault();
+    if(!form.amount||Number(form.amount)<=0)return alert('Vui lòng nhập số tiền.');
+    setTransactions(prev=>[{
+      id:'TC-'+Date.now(),
+      ...form,
+      amount:Number(form.amount)
+    },...prev]);
+    setForm({type:'Chi',category:'Khác',amount:'',payment:'Chuyển khoản',date:todayISO(),note:''});
+    setShowForm(false);
+  }
+  function removeManual(id){
+    if(!confirm('Xóa khoản thu/chi này?'))return;
+    setTransactions(prev=>prev.filter(x=>x.id!==id));
+  }
+  function addCategory(e){
+    e.preventDefault();
+    const name=newCategory.trim();
+    if(!name)return;
+    if(!categories.includes(name))setCategories(prev=>[...prev,name]);
+    setNewCategory('');
+  }
+
+  return <section className="screen cash-screen">
+    <div className="screen-head">
+      <div><h2>Thu chi</h2><p>Theo dõi tiền thực tế vào và ra khỏi quán</p></div>
+      <button className="primary small" onClick={()=>setShowForm(true)}>+ Ghi thu chi</button>
+    </div>
+
+    <div className="cash-summary">
+      <div className="card"><div className="muted">TIỀN VÀO</div><div className="money">{fmt(income)}</div></div>
+      <div className="card"><div className="muted">TIỀN RA</div><div className="money">{fmt(outcome)}</div></div>
+      <div className="card balance-card"><div className="muted">CHÊNH LỆCH DÒNG TIỀN</div><div className={'money '+(balance<0?'negative':'')}>{balance<0?'-':''}{fmt(Math.abs(balance))}</div></div>
+    </div>
+
+    <div className="card auto-note">
+      <strong>Tự động ghi nhận</strong>
+      <p>Đơn bán hàng/App Food được tính là tiền vào. Phiếu nhập hàng có số tiền được tính là tiền ra. Không cần nhập lại.</p>
+    </div>
+
+    <div className="segmented cash-tabs">
+      <button className={tab==='all'?'active':''} onClick={()=>setTab('all')}>Tất cả</button>
+      <button className={tab==='income'?'active':''} onClick={()=>setTab('income')}>Tiền vào</button>
+      <button className={tab==='expense'?'active':''} onClick={()=>setTab('expense')}>Tiền ra</button>
+    </div>
+
+    <div className="card cash-list">
+      {!shown.length&&<div className="empty">Chưa có giao dịch.</div>}
+      {shown.map(x=><div className="cash-row" key={x.id}>
+        <div className="cash-row-main">
+          <strong>{x.category}</strong>
+          <small>{x.date} · {x.payment}{x.auto?' · Tự động':''}</small>
+          {x.note&&<span>{x.note}</span>}
+        </div>
+        <div className="cash-row-side">
+          <strong className={x.type==='Chi'?'expense-money':'income-money'}>{x.type==='Chi'?'-':'+'}{fmt(x.amount)}</strong>
+          {!x.auto&&<button onClick={()=>removeManual(x.id)}>Xóa</button>}
+        </div>
+      </div>)}
+    </div>
+
+    <button className="secondary full" onClick={()=>setShowCategory(v=>!v)}>Danh mục chi phí</button>
+    {showCategory&&<div className="card category-box">
+      <div className="tag-list">{categories.map(c=><span key={c}>{c}</span>)}</div>
+      <form className="category-add" onSubmit={addCategory}>
+        <input value={newCategory} onChange={e=>setNewCategory(e.target.value)} placeholder="Thêm danh mục mới"/>
+        <button className="primary">Thêm</button>
+      </form>
+    </div>}
+
+    {showForm&&<Modal title="Ghi thu chi" close={()=>setShowForm(false)}>
+      <form className="form-card plain" onSubmit={saveTransaction}>
+        <div className="segmented transaction-type">
+          <button type="button" className={form.type==='Thu'?'active':''} onClick={()=>setForm({...form,type:'Thu',category:'Thu khác'})}>Tiền vào</button>
+          <button type="button" className={form.type==='Chi'?'active':''} onClick={()=>setForm({...form,type:'Chi',category:'Khác'})}>Tiền ra</button>
+        </div>
+        <label>Ngày<input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/></label>
+        <label>Danh mục
+          {form.type==='Chi'
+            ?<select value={form.category} onChange={e=>setForm({...form,category:e.target.value})}>{categories.map(c=><option key={c}>{c}</option>)}</select>
+            :<select value={form.category} onChange={e=>setForm({...form,category:e.target.value})}><option>Thu khác</option><option>Góp vốn</option><option>Hoàn tiền</option></select>
+          }
+        </label>
+        <label>Số tiền<input type="number" value={form.amount} onChange={e=>setForm({...form,amount:e.target.value})} placeholder="0"/></label>
+        <label>Thanh toán<select value={form.payment} onChange={e=>setForm({...form,payment:e.target.value})}><option>Tiền mặt</option><option>Chuyển khoản</option><option>Khác</option></select></label>
+        <label>Ghi chú<textarea value={form.note} onChange={e=>setForm({...form,note:e.target.value})} placeholder="Có thể bỏ trống"/></label>
+        <button className="primary full">Lưu</button>
+      </form>
+    </Modal>}
+  </section>
+}
+
 function Reports({orders}){const valid=orders.filter(o=>o.status!=='Đã hủy'); const revenue=valid.reduce((s,o)=>s+Number(o.total||0),0); return <section className="screen"><h2>Báo cáo</h2><div className="card"><div className="muted">TỔNG DOANH THU ĐANG GHI NHẬN</div><div className="big-number">{fmt(revenue)}</div></div><div className="report-menu"><button>Kết quả kinh doanh <span>›</span></button><button>Sản phẩm bán ra <span>›</span></button><button>Nguồn bán <span>›</span></button><button>Chênh lệch kho <span>›</span></button></div></section>}
 function More({go,user,onSignOut,syncState}){return <section className="screen"><h2>Thêm</h2><div className="card account-card"><div><div className="muted">TÀI KHOẢN</div><strong>Admin · Chủ quán</strong><small>{syncState==='saving'?'Đang đồng bộ dữ liệu…':syncState==='error'?'Có lỗi đồng bộ':'Dữ liệu đã đồng bộ'}</small></div><button className="secondary" onClick={onSignOut}>Đăng xuất</button></div><div className="report-menu"><button onClick={()=>go('foodapp')}>Nhập đơn từ App Food <span>›</span></button><button onClick={()=>go('products')}>Món & giá vốn <span>›</span></button><button onClick={()=>go('stock')}>Nguyên liệu & kho <span>›</span></button><button>Cài đặt danh mục chi <span>›</span></button></div></section>}
