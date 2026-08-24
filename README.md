@@ -1,41 +1,21 @@
-# Nhà Gé MVP 0.2
+# Nhà Gé MVP 0.3
 
-Bản dự án thật bằng Next.js, ưu tiên giao diện di động và tự mở rộng khi dùng trên máy tính.
+Bản 0.3 tập trung vào trải nghiệm di động và dữ liệu bán hàng cơ bản.
 
 ## Đã có
-- Trang chủ
-- Bán hàng
-- Danh sách đơn hàng
-- Xem chi tiết đơn
-- Sửa tổng tiền / số lượng tổng / ghi chú
-- Hủy đơn
-- Nhập đơn từ App Food theo tổng cuối ngày
-- Chọn ngày cũ để nhập bù
-- Kho cơ bản
-- Thu chi cơ bản
-- Báo cáo cơ bản
-- Lưu dữ liệu đơn hàng thử nghiệm ngay trên trình duyệt
+- Font Be Vietnam Pro để đọc tiếng Việt rõ hơn
+- Quản lý món: thêm, sửa, ẩn món
+- Giá bán và giá vốn trực tiếp
+- Danh mục món
+- Bán hàng lấy dữ liệu từ danh sách món
+- Danh sách đơn, xem, sửa tổng tiền/số lượng, hủy đơn
+- Nhập một đơn tổng từ App Food theo ngày
+- Lưu dữ liệu thử nghiệm trên trình duyệt
 
 ## Chưa có
-- Cơ sở dữ liệu thật
-- Đăng nhập
 - Đồng bộ nhiều thiết bị
-- Tự động trừ kho thật
-- Phiếu nhập hàng lưu dữ liệu
-- Giá vốn lịch sử
+- Đăng nhập
+- Cơ sở dữ liệu trực tuyến
+- Kho tự động theo công thức nguyên liệu
 
-## Chạy trên máy
-Cần Node.js 20.9 trở lên.
-
-```bash
-npm install
-npm run dev
-```
-
-Sau đó mở http://localhost:3000
-
-## Bước kỹ thuật tiếp theo
-1. Nối Supabase.
-2. Tạo bảng quán, người dùng, sản phẩm, đơn hàng, chi tiết đơn, kho, phiếu nhập và thu chi.
-3. Chuyển dữ liệu thử nghiệm từ localStorage sang Supabase.
-4. Thêm lịch sử thay đổi giá vốn để không ghi đè dữ liệu cũ.
+Bước kế tiếp: kết nối Supabase để dữ liệu dùng chung giữa điện thoại và máy tính.
