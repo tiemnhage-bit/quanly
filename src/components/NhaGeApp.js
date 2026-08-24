@@ -222,7 +222,7 @@ export default function NhaGeApp() {
   if (syncState === 'error' && !dataReady) return <SyncErrorScreen message={syncError} />;
 
   return <div className="app-shell">
-    <header className="topbar"><div><div className="brand">TIỆM NHÀ GÉ</div><div className="date">Quản lý quán · Bản 0.10.1 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn" onClick={() => setScreen('more')}>⋯</button></header>
+    <header className="topbar"><div><div className="brand">TIỆM NHÀ GÉ</div><div className="date">Quản lý quán · Bản 0.10.2.2 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn" onClick={() => setScreen('more')}>⋯</button></header>
     <main>
       {screen === 'home' && <Home todayRevenue={todayRevenue} dayOrders={dayOrders} todayQty={todayQty} cashToday={cashToday} bankToday={bankToday} knownCostToday={knownCostToday} ingredients={ingredients} go={setScreen} openOrders={() => {setScreen('order');setOrderTab('list')}} />}
       {screen === 'order' && <OrdersScreen products={products.filter(p=>p.active!==false)} tab={orderTab} setTab={setOrderTab} cart={cart} addProduct={addProduct} changeQty={changeQty} payment={payment} setPayment={setPayment} discount={discount} setDiscount={setDiscount} completeOrder={completeOrder} orders={orders} openOrder={setSelectedOrder} goFood={() => setScreen('foodapp')} />}
@@ -248,7 +248,7 @@ function AuthScreen(){
   return <div className="auth-shell"><div className="auth-card"><div className="auth-logo">GÉ</div><h1>Quản lý quán</h1><p>Đăng nhập để dùng chung dữ liệu trên điện thoại và máy tính.</p><form className="auth-form" onSubmit={submit}><label>Tên đăng nhập<input required value={username} onChange={e=>setUsername(e.target.value)} autoCapitalize="none" /></label><label>Mật khẩu<input type="password" required minLength="6" value={password} onChange={e=>setPassword(e.target.value)} /></label>{message&&<div className="auth-message">{message}</div>}<button className="primary full" disabled={busy}>{busy?'Đang đăng nhập…':'Đăng nhập'}</button></form><p className="hint">Tài khoản chủ quán ban đầu: <b>Admin</b>. Sau khi kết nối dữ liệu, nên đổi mật khẩu mặc định.</p></div></div>
 }
 function LoadingScreen({text}){ return <div className="auth-shell"><div className="auth-card center"><div className="spinner"></div><strong>{text}</strong></div></div> }
-function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.10.1 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
+function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.10.2.2 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
 function SyncErrorScreen({message}){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa tải được dữ liệu</h1><p>Hãy kiểm tra đã chạy file <b>supabase.sql</b> trong Supabase chưa.</p><div className="auth-message">{message}</div></div></div> }
 
 function Nav({active,icon,label,onClick}) { return <button className={'nav-item '+(active?'active':'')} onClick={onClick}><span>{icon}</span><small>{label}</small></button> }
@@ -324,95 +324,64 @@ function FoodAppForm({form,setForm,products,cart,addProduct,changeQty,onSubmit,b
 
   return <section className="screen food-screen">
     <button className="back" onClick={back}>← Quay lại</button>
-
     <div>
       <h2>Nhập đơn từ App Food</h2>
-      <p className="hint">Mỗi ngày chỉ cần tạo 1 đơn tổng. Chọn các món đã bán để hệ thống tự trừ kho, sau đó nhập doanh thu thực nhận.</p>
+      <p className="hint">Chọn món giống khi bán tại quán. Cuối cùng nhập doanh thu thực nhận từ ứng dụng.</p>
     </div>
 
-    <form className="form-card food-meta" onSubmit={onSubmit}>
-      <label>Ngày bán
-        <input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/>
-      </label>
+    <div className="food-layout">
+      <div className="food-products-area">
+        <div className="form-card compact-food-info">
+          <label>Ngày bán<input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/></label>
+          <label>Ứng dụng<select value={form.app} onChange={e=>setForm({...form,app:e.target.value})}>
+            <option>Grab Food</option><option>Shopee Food</option><option>Green Food</option><option>Be Food</option><option>Khác</option>
+          </select></label>
+        </div>
 
-      <label>Ứng dụng
-        <select value={form.app} onChange={e=>setForm({...form,app:e.target.value})}>
-          <option>Grab Food</option>
-          <option>Shopee Food</option>
-          <option>Green Food</option>
-          <option>Be Food</option>
-          <option>Khác</option>
-        </select>
-      </label>
-
-      <div className="food-summary-box">
-        <div><span>Tổng số lượng</span><strong>{totalQty} ly / sản phẩm</strong></div>
-        <div><span>Tổng theo giá bán tại quán</span><strong>{fmt(retailTotal)}</strong></div>
+        <div className="searchbar"><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Tìm món..." /></div>
+        <div className="chips">{categories.map(c=><button type="button" key={c} className={'chip '+(category===c?'active':'')} onClick={()=>setCategory(c)}>{c}</button>)}</div>
+        <div className="products">{shown.map(p=><button type="button" className="product" key={p.id} onClick={()=>addProduct(p)}><span>{p.name}</span><strong>{fmt(p.price)}</strong></button>)}</div>
       </div>
 
-      <label>Doanh thu thực nhận
-        <input type="number" value={form.total} onChange={e=>setForm({...form,total:e.target.value})} placeholder="Sau khi đã trừ phí sàn / quảng cáo" />
-      </label>
+      <form className="card food-current-order" onSubmit={onSubmit}>
+        <div className="section-title food-order-title">Đơn hiện tại</div>
 
-      <label>Ghi chú
-        <textarea value={form.note} onChange={e=>setForm({...form,note:e.target.value})} placeholder="Có thể bỏ trống" />
-      </label>
+        {!cart.length && <div className="empty">Chưa chọn món.</div>}
 
-      <button className="primary full" disabled={!cart.length}>Lưu đơn & trừ kho</button>
-    </form>
-
-    <div className="food-picker">
-      <div className="searchbar">
-        <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Tìm món..." />
-      </div>
-
-      <div className="chips">
-        {categories.map(c=>
-          <button type="button" key={c} className={'chip '+(category===c?'active':'')} onClick={()=>setCategory(c)}>
-            {c}
-          </button>
-        )}
-      </div>
-
-      <div className="products">
-        {shown.map(p=>
-          <button type="button" className="product" key={p.id} onClick={()=>addProduct(p)}>
-            <span>{p.name}</span>
-            <strong>{fmt(p.price)}</strong>
-          </button>
-        )}
-      </div>
-    </div>
-
-    <div className="card food-cart">
-      <div className="section-title">Sản phẩm đang chọn</div>
-
-      {!cart.length&&<div className="empty">Chưa chọn món.</div>}
-
-      {cart.map(x=>
-        <div className="food-selected-row" key={x.id}>
-          <div className="food-selected-main">
-            <strong>{x.name}</strong>
-            <small>{fmt(x.price)} / món</small>
-          </div>
-
-          <div className="food-selected-side">
-            <div className="qty-control">
+        <div className="food-order-lines">
+          {cart.map(x=><div className="food-order-line" key={x.id}>
+            <div className="food-line-info">
+              <strong>{x.name}</strong>
+              <span>{fmt(x.price)}</span>
+            </div>
+            <div className="qty-control food-qty">
               <button type="button" onClick={()=>changeQty(x.id,-1)}>−</button>
               <strong>{x.qty}</strong>
               <button type="button" onClick={()=>changeQty(x.id,1)}>+</button>
             </div>
-            <strong className="line-total">{fmt(Number(x.price||0)*Number(x.qty||0))}</strong>
-          </div>
+          </div>)}
         </div>
-      )}
 
-      {cart.length>0&&
-        <div className="food-cart-total">
+        <div className="food-order-total">
           <span>Tổng giá bán tại quán</span>
           <strong>{fmt(retailTotal)}</strong>
         </div>
-      }
+        <div className="food-order-count">
+          <span>Số lượng</span>
+          <strong>{totalQty} ly / sản phẩm</strong>
+        </div>
+
+        <label className="food-received">Doanh thu thực nhận
+          <input type="number" value={form.total} onChange={e=>setForm({...form,total:e.target.value})} placeholder="0" />
+          <small>Số tiền còn lại sau phí sàn / quảng cáo.</small>
+        </label>
+
+        <label>Ghi chú
+          <textarea value={form.note} onChange={e=>setForm({...form,note:e.target.value})} placeholder="Có thể bỏ trống" />
+        </label>
+
+        <button className="primary full food-submit" disabled={!cart.length}>Hoàn tất đơn App Food</button>
+      </form>
     </div>
   </section>
 }

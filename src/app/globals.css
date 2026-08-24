@@ -20,3 +20,33 @@
 .food-selected-side{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
 .line-total{font-size:13px}
 .food-cart-total{display:flex;justify-content:space-between;gap:12px;padding-top:14px;margin-top:6px;border-top:1px solid var(--line);font-size:15px}
+
+/* 0.10.2 - App Food: khối Đơn hiện tại giống màn Bán hàng */
+.food-layout{display:grid;gap:14px}
+.food-products-area{display:grid;gap:10px;min-width:0}
+.compact-food-info{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.food-current-order{padding:16px}
+.food-order-title{font-size:17px;margin-bottom:12px}
+.food-order-lines{display:grid}
+.food-order-line{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.food-line-info{display:flex;flex-direction:column;gap:4px;min-width:0}
+.food-line-info strong{font-size:16px}
+.food-line-info span{color:var(--muted);font-size:14px}
+.food-qty{flex-shrink:0}
+.food-order-total,.food-order-count{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0}
+.food-order-total{border-bottom:1px solid var(--line);font-size:16px}
+.food-order-total strong{font-size:20px}
+.food-order-count{color:var(--muted)}
+.food-order-count strong{color:var(--text)}
+.food-received{margin-top:4px}
+.food-received input{font-size:18px;font-weight:700;text-align:right}
+.food-received small{display:block;margin-top:5px;color:var(--muted);font-weight:400}
+.food-submit{margin-top:4px}
+@media(min-width:760px){
+  .food-layout{grid-template-columns:minmax(0,1.55fr) minmax(330px,.8fr);align-items:start}
+  .food-current-order{position:sticky;top:86px}
+}
+@media(max-width:520px){
+  .compact-food-info{grid-template-columns:1fr}
+  .food-current-order{padding:14px}
+}
