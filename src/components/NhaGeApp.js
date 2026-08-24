@@ -66,7 +66,8 @@ export default function NhaGeApp() {
   const [payment, setPayment] = useState('Tiền mặt');
   const [discount, setDiscount] = useState('');
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [foodForm, setFoodForm] = useState({ date: todayISO(), app: 'GrabFood', totalQty: '', total: '', note: '' });
+  const [foodForm, setFoodForm] = useState({ date: todayISO(), app: 'GrabFood', total: '', note: '' });
+  const [foodCart, setFoodCart] = useState([]);
 
   useEffect(() => {
     if (!supabaseReady || !supabase) { setAuthLoading(false); return; }
@@ -134,6 +135,16 @@ export default function NhaGeApp() {
     setCart(prev => { const found = prev.find(x => x.id === p.id); if (found) return prev.map(x => x.id === p.id ? { ...x, qty: x.qty + 1 } : x); return [...prev, { ...p, qty: 1 }]; });
   }
   function changeQty(id, delta) { setCart(prev => prev.map(x => x.id === id ? { ...x, qty: Math.max(0, x.qty + delta) } : x).filter(x => x.qty > 0)); }
+  function addFoodProduct(p) {
+    setFoodCart(prev => {
+      const found = prev.find(x => x.id === p.id);
+      if (found) return prev.map(x => x.id === p.id ? { ...x, qty: x.qty + 1 } : x);
+      return [...prev, { ...p, qty: 1 }];
+    });
+  }
+  function changeFoodQty(id, delta) {
+    setFoodCart(prev => prev.map(x => x.id === id ? { ...x, qty: Math.max(0, x.qty + delta) } : x).filter(x => x.qty > 0));
+  }
   function applyStockChange(items, direction, refId, reason='Bán hàng') {
     const movements = [];
     (items || []).forEach(item => {
@@ -169,9 +180,25 @@ export default function NhaGeApp() {
     setOrders(prev => [order, ...prev]); setCart([]); setDiscount(''); setOrderTab('list');
   }
   function saveFoodOrder(e) {
-    e.preventDefault(); if (!foodForm.totalQty || !foodForm.total) return alert('Vui lòng nhập tổng số ly và doanh thu thực nhận.');
-    const order = { id:`APP-${Date.now()}`, date:foodForm.date, time:new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'}), source:foodForm.app, payment:'App Food', status:'Hoàn tất', items:[], totalQty:Number(foodForm.totalQty), subtotal:Number(foodForm.total), discount:0, total:Number(foodForm.total), note:foodForm.note||'Nhập tổng cuối ngày' };
-    setOrders(prev => [order, ...prev]); setFoodForm({ date:todayISO(), app:'GrabFood', totalQty:'', total:'', note:'' }); setScreen('order'); setOrderTab('list');
+    e.preventDefault();
+    if (!foodCart.length) return alert('Vui lòng chọn ít nhất 1 món đã bán trên App Food.');
+    if (!foodForm.total) return alert('Vui lòng nhập doanh thu thực nhận.');
+    const items = foodCart.map(x=>({productId:x.id,name:x.name,qty:x.qty,price:x.price,cost:x.cost||0}));
+    const totalQty = items.reduce((s,x)=>s+Number(x.qty||0),0);
+    const id = `APP-${Date.now()}`;
+    const stockMovements = applyStockChange(items, -1, id, 'Bán hàng App Food');
+    const order = {
+      id, date:foodForm.date,
+      time:new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'}),
+      source:foodForm.app, payment:'App Food', status:'Hoàn tất',
+      items, stockMovements, totalQty,
+      subtotal:Number(foodForm.total), discount:0, total:Number(foodForm.total),
+      note:foodForm.note||'Nhập tổng cuối ngày'
+    };
+    setOrders(prev => [order, ...prev]);
+    setFoodForm({ date:todayISO(), app:'GrabFood', total:'', note:'' });
+    setFoodCart([]);
+    setScreen('order'); setOrderTab('list');
   }
   function cancelOrder(id) {
     const order = orders.find(o=>o.id===id);
@@ -195,11 +222,11 @@ export default function NhaGeApp() {
   if (syncState === 'error' && !dataReady) return <SyncErrorScreen message={syncError} />;
 
   return <div className="app-shell">
-    <header className="topbar"><div><div className="brand">TIỆM NHÀ GÉ</div><div className="date">Quản lý quán · Bản 0.9 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn" onClick={() => setScreen('more')}>⋯</button></header>
+    <header className="topbar"><div><div className="brand">TIỆM NHÀ GÉ</div><div className="date">Quản lý quán · Bản 0.10 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn" onClick={() => setScreen('more')}>⋯</button></header>
     <main>
-      {screen === 'home' && <Home todayRevenue={todayRevenue} dayOrders={dayOrders} todayQty={todayQty} cashToday={cashToday} bankToday={bankToday} knownCostToday={knownCostToday} go={setScreen} openOrders={() => {setScreen('order');setOrderTab('list')}} />}
+      {screen === 'home' && <Home todayRevenue={todayRevenue} dayOrders={dayOrders} todayQty={todayQty} cashToday={cashToday} bankToday={bankToday} knownCostToday={knownCostToday} ingredients={ingredients} go={setScreen} openOrders={() => {setScreen('order');setOrderTab('list')}} />}
       {screen === 'order' && <OrdersScreen products={products.filter(p=>p.active!==false)} tab={orderTab} setTab={setOrderTab} cart={cart} addProduct={addProduct} changeQty={changeQty} payment={payment} setPayment={setPayment} discount={discount} setDiscount={setDiscount} completeOrder={completeOrder} orders={orders} openOrder={setSelectedOrder} goFood={() => setScreen('foodapp')} />}
-      {screen === 'foodapp' && <FoodAppForm form={foodForm} setForm={setFoodForm} onSubmit={saveFoodOrder} back={() => {setScreen('order');setOrderTab('list')}} />}
+      {screen === 'foodapp' && <FoodAppForm form={foodForm} setForm={setFoodForm} products={products.filter(p=>p.active!==false)} cart={foodCart} addProduct={addFoodProduct} changeQty={changeFoodQty} onSubmit={saveFoodOrder} back={() => {setScreen('order');setOrderTab('list')}} />}
       {screen === 'products' && <ProductManager products={products} setProducts={setProducts} ingredients={ingredients} back={()=>setScreen('more')} />}
       {screen === 'stock' && <Stock ingredients={ingredients} setIngredients={setIngredients} receipts={stockReceipts} setReceipts={setStockReceipts} counts={stockCounts} setCounts={setStockCounts} adjustments={stockAdjustments} setAdjustments={setStockAdjustments} />}{screen === 'cash' && <Cash />}{screen === 'reports' && <Reports orders={orders} products={products} />}
       {screen === 'more' && <More go={setScreen} user={user} onSignOut={signOut} syncState={syncState} />}
@@ -221,16 +248,21 @@ function AuthScreen(){
   return <div className="auth-shell"><div className="auth-card"><div className="auth-logo">GÉ</div><h1>Quản lý quán</h1><p>Đăng nhập để dùng chung dữ liệu trên điện thoại và máy tính.</p><form className="auth-form" onSubmit={submit}><label>Tên đăng nhập<input required value={username} onChange={e=>setUsername(e.target.value)} autoCapitalize="none" /></label><label>Mật khẩu<input type="password" required minLength="6" value={password} onChange={e=>setPassword(e.target.value)} /></label>{message&&<div className="auth-message">{message}</div>}<button className="primary full" disabled={busy}>{busy?'Đang đăng nhập…':'Đăng nhập'}</button></form><p className="hint">Tài khoản chủ quán ban đầu: <b>Admin</b>. Sau khi kết nối dữ liệu, nên đổi mật khẩu mặc định.</p></div></div>
 }
 function LoadingScreen({text}){ return <div className="auth-shell"><div className="auth-card center"><div className="spinner"></div><strong>{text}</strong></div></div> }
-function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.9 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
+function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.10 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
 function SyncErrorScreen({message}){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa tải được dữ liệu</h1><p>Hãy kiểm tra đã chạy file <b>supabase.sql</b> trong Supabase chưa.</p><div className="auth-message">{message}</div></div></div> }
 
 function Nav({active,icon,label,onClick}) { return <button className={'nav-item '+(active?'active':'')} onClick={onClick}><span>{icon}</span><small>{label}</small></button> }
 
-function Home({todayRevenue,dayOrders,todayQty,cashToday,bankToday,knownCostToday,go,openOrders}) {
+function Home({todayRevenue,dayOrders,todayQty,cashToday,bankToday,knownCostToday,ingredients,go,openOrders}) {
+  const lowStock = (ingredients||[]).filter(x => Number(x.minQty||0)>0 && Number(x.qty||0)<=Number(x.minQty||0));
   return <section className="screen">
     <div className="card hero"><div className="muted">DOANH THU HÔM NAY</div><div className="big-number">{fmt(todayRevenue)}</div><div className="stats-row"><div><strong>{dayOrders.length}</strong><span>đơn</span></div><div><strong>{todayQty}</strong><span>ly / sản phẩm</span></div></div></div>
     <div className="grid-2"><div className="card"><div className="muted">TIỀN MẶT</div><div className="money">{fmt(cashToday)}</div></div><div className="card"><div className="muted">CHUYỂN KHOẢN</div><div className="money">{fmt(bankToday)}</div></div></div>
-    <div className="card"><div className="section-title">Lợi nhuận tạm tính</div><div className="profit">{fmt(Math.max(todayRevenue-knownCostToday,0))}</div><div className="summary-line"><span>Doanh thu</span><strong>{fmt(todayRevenue)}</strong></div><div className="summary-line"><span>Giá vốn đã biết</span><strong>-{fmt(knownCostToday)}</strong></div><p className="hint">Đơn App Food hiện chưa tách món nên chưa tính được giá vốn tự động.</p></div>
+    <div className="card"><div className="section-title">Lợi nhuận tạm tính</div><div className="profit">{fmt(Math.max(todayRevenue-knownCostToday,0))}</div><div className="summary-line"><span>Doanh thu</span><strong>{fmt(todayRevenue)}</strong></div><div className="summary-line"><span>Giá vốn đã biết</span><strong>-{fmt(knownCostToday)}</strong></div></div>
+    <div className={'card stock-alert-card '+(lowStock.length?'warning':'ok')}>
+      <div className="stock-alert-head"><div><div className="section-title">Cảnh báo tồn kho</div><p>{lowStock.length?`${lowStock.length} mục đang ở mức cần bổ sung`:'Kho hiện chưa có mục nào dưới mức cảnh báo.'}</p></div><button className="secondary" onClick={()=>go('stock')}>Xem kho</button></div>
+      {lowStock.length>0&&<div className="home-stock-alerts">{lowStock.slice(0,5).map(x=><div className="home-stock-row" key={x.id}><span>⚠ {x.name}</span><strong>{x.qty} {x.unit}</strong></div>)}{lowStock.length>5&&<div className="hint">Còn {lowStock.length-5} mục khác đang cảnh báo.</div>}</div>}
+    </div>
     <div className="quick-actions"><button onClick={openOrders}>Danh sách đơn</button><button onClick={()=>go('foodapp')}>Nhập đơn App Food</button><button onClick={()=>go('products')}>Món & giá vốn</button></div>
   </section>
 }
@@ -282,7 +314,37 @@ function RecipeModal({product,ingredients,onClose,onSave}){
   return <Modal title={`Trừ kho · ${product.name}`} close={onClose}><p className="hint">Khi bán 1 món, hệ thống sẽ trừ đúng số lượng dưới đây. Tất cả nguyên liệu phải chọn từ Danh mục kho chung.</p>{!ingredients.length&&<div className="auth-message">Chưa có nguyên liệu. Hãy vào Kho để tạo danh mục trước.</div>}<div className="recipe-list">{rows.map((r,i)=><div className="recipe-row" key={i}><select value={r.ingredientId} onChange={e=>change(i,'ingredientId',e.target.value)}><option value="">Chọn nguyên liệu</option>{ingredients.map(x=><option key={x.id} value={x.id}>{x.name} ({x.unit})</option>)}</select><input type="number" step="0.01" min="0" value={r.qty} onChange={e=>change(i,'qty',e.target.value)} placeholder="SL"/><button onClick={()=>setRows(v=>v.filter((_,idx)=>idx!==i))}>×</button></div>)}</div><button className="secondary full" onClick={()=>setRows(v=>[...v,{ingredientId:'',qty:''}])}>+ Thêm nguyên liệu</button><button className="primary full" onClick={save}>Lưu cách trừ kho</button></Modal>
 }
 
-function FoodAppForm({form,setForm,onSubmit,back}) { return <section className="screen"><button className="back" onClick={back}>← Quay lại</button><h2>Nhập đơn từ App Food</h2><p className="hint">Nhập tổng cả ngày như một đơn. Có thể chọn ngày cũ để nhập bù.</p><form className="form-card" onSubmit={onSubmit}><label>Ngày bán<input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/></label><label>Ứng dụng<select value={form.app} onChange={e=>setForm({...form,app:e.target.value})}><option>GrabFood</option><option>ShopeeFood</option><option>Khác</option></select></label><label>Tổng số ly đã bán<input type="number" value={form.totalQty} onChange={e=>setForm({...form,totalQty:e.target.value})} placeholder="Ví dụ: 24" /></label><label>Doanh thu thực nhận<input type="number" value={form.total} onChange={e=>setForm({...form,total:e.target.value})} placeholder="Sau khi đã trừ phí sàn / quảng cáo" /></label><label>Ghi chú<textarea value={form.note} onChange={e=>setForm({...form,note:e.target.value})} placeholder="Có thể bỏ trống" /></label><button className="primary full">Lưu đơn</button></form></section> }
+function FoodAppForm({form,setForm,products,cart,addProduct,changeQty,onSubmit,back}) {
+  const [query,setQuery]=useState('');
+  const [category,setCategory]=useState('Tất cả');
+  const categories=['Tất cả',...Array.from(new Set(products.map(p=>p.category).filter(Boolean)))];
+  const shown=products.filter(p=>(category==='Tất cả'||p.category===category)&&p.name.toLowerCase().includes(query.toLowerCase()));
+  const totalQty=cart.reduce((s,x)=>s+Number(x.qty||0),0);
+  return <section className="screen food-screen">
+    <button className="back" onClick={back}>← Quay lại</button>
+    <div><h2>Nhập đơn từ App Food</h2><p className="hint">Mỗi ngày chỉ cần tạo 1 đơn tổng. Chọn các món đã bán để hệ thống tự trừ kho, sau đó nhập doanh thu thực nhận.</p></div>
+    <form className="form-card food-meta" onSubmit={onSubmit}>
+      <label>Ngày bán<input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/></label>
+      <label>Ứng dụng<select value={form.app} onChange={e=>setForm({...form,app:e.target.value})}><option>GrabFood</option><option>ShopeeFood</option><option>Khác</option></select></label>
+      <label>Doanh thu thực nhận<input type="number" value={form.total} onChange={e=>setForm({...form,total:e.target.value})} placeholder="Sau khi đã trừ phí sàn / quảng cáo" /></label>
+      <label>Ghi chú<textarea value={form.note} onChange={e=>setForm({...form,note:e.target.value})} placeholder="Có thể bỏ trống" /></label>
+      <div className="food-summary"><span>Tổng đã chọn</span><strong>{totalQty} ly / sản phẩm</strong></div>
+      <button className="primary full" disabled={!cart.length}>Lưu đơn & trừ kho</button>
+    </form>
+
+    <div className="food-picker">
+      <div className="searchbar"><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Tìm món..." /></div>
+      <div className="chips">{categories.map(c=><button type="button" key={c} className={'chip '+(category===c?'active':'')} onClick={()=>setCategory(c)}>{c}</button>)}</div>
+      <div className="products">{shown.map(p=><button type="button" className="product" key={p.id} onClick={()=>addProduct(p)}><span>{p.name}</span><strong>{fmt(p.price)}</strong></button>)}</div>
+    </div>
+
+    <div className="card food-cart">
+      <div className="section-title">Món đã bán trên App Food</div>
+      {!cart.length&&<div className="empty">Chưa chọn món.</div>}
+      {cart.map(x=><div className="cart-row qty-row" key={x.id}><div><strong>{x.name}</strong><small>{fmt(x.price)}</small></div><div className="qty-control"><button type="button" onClick={()=>changeQty(x.id,-1)}>−</button><strong>{x.qty}</strong><button type="button" onClick={()=>changeQty(x.id,1)}>+</button></div></div>)}
+    </div>
+  </section>
+}
 
 function OrderDrawer({order,onClose,onCancel,onSave}) {
   const [draft,setDraft]=useState({...order, subtotal:Number(order.subtotal ?? order.total ?? 0), discount:Number(order.discount || 0)});
