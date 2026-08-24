@@ -7,9 +7,9 @@ import { supabase, supabaseReady } from '@/lib/supabase';
 const fmt = (n) => new Intl.NumberFormat('vi-VN').format(Number(n || 0)) + 'đ';
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
-const IMPORTED_INGREDIENTS = [{"id": "nl-ca-phe-hat", "name": "Cà Phê Hạt", "type": "Nguyên liệu", "unit": "g", "qty": 20000, "minQty": 100}, {"id": "nl-sua-dac", "name": "Sữa Đặc", "type": "Nguyên liệu", "unit": "ml", "qty": 6000, "minQty": 2000}, {"id": "nl-sua-tuoi-vinamil", "name": "Sữa Tươi Vinamil", "type": "Nguyên liệu", "unit": "ml", "qty": 0, "minQty": 20}, {"id": "nl-phindi-hanh-nhan", "name": "Phindi Hạnh Nhân", "type": "Nguyên liệu", "unit": "ml", "qty": 0, "minQty": 20}, {"id": "bb-ly-ca-phe", "name": "Ly Cà Phê", "type": "Bao bì", "unit": "cái", "qty": 1000, "minQty": 200}, {"id": "nl-rich-lun", "name": "Rích Lùn", "type": "Nguyên liệu", "unit": "ml", "qty": 0, "minQty": 0}, {"id": "bb-ly-lun-500", "name": "Ly Lùn 500ml", "type": "Bao bì", "unit": "cái", "qty": 0, "minQty": 0}];
-
-const IMPORTED_RECIPES = {"Cà Phê Đen": [["Cà Phê Hạt", 20], ["Ly Cà Phê", 1]], "Cà Phê Sữa": [["Cà Phê Hạt", 20], ["Ly Cà Phê", 1], ["Sữa Đặc", 30]], "Bạc Xỉu": [["Cà Phê Hạt", 20], ["Ly Lùn 500ml", 1], ["Sữa Đặc", 20], ["Rích Lùn", 10]]};
+const INVENTORY_IMPORT_VERSION = '2026-08-24-full-v1';
+const IMPORTED_INGREDIENTS = [{"id":"nl-ca-phe-hat","name":"Cà Phê Hạt","type":"Nguyên liệu","unit":"g","qty":20000.0,"minQty":100.0,"lastPrice":0.0,"note":"Ví dụ"},{"id":"nl-sua-ac","name":"Sữa Đặc","type":"Nguyên liệu","unit":"ml","qty":6000.0,"minQty":2000.0,"lastPrice":0.0,"note":"Ví dụ"},{"id":"nl-sua-tuoi-vinamil","name":"Sữa Tươi Vinamil","type":"Nguyên liệu","unit":"ml","qty":0.0,"minQty":20.0,"lastPrice":0.0,"note":"Ví dụ"},{"id":"nl-phindi-hanh-nhan","name":"Phindi Hạnh Nhân","type":"Nguyên liệu","unit":"ml","qty":0.0,"minQty":20.0,"lastPrice":0.0,"note":"Ví dụ"},{"id":"bb-ly-ca-phe","name":"Ly Cà Phê","type":"Bao bì","unit":"cái","qty":1000.0,"minQty":200.0,"lastPrice":0.0,"note":""},{"id":"nl-rich-lun","name":"Rích Lùn","type":"Nguyên liệu","unit":"ml","qty":2700.0,"minQty":450.0,"lastPrice":0.0,"note":""},{"id":"bb-ly-lun-500ml","name":"Ly Lùn 500ml","type":"Bao bì","unit":"cái","qty":1000.0,"minQty":200.0,"lastPrice":0.0,"note":""},{"id":"nl-tra-lai","name":"Trà Lài","type":"Nguyên liệu","unit":"g","qty":1000.0,"minQty":200.0,"lastPrice":0.0,"note":""},{"id":"nl-tra-nhan-vang-cozy","name":"Trà Nhãn Vàng Cozy","type":"Nguyên liệu","unit":"gói","qty":100.0,"minQty":20.0,"lastPrice":0.0,"note":""},{"id":"bb-ly-700ml","name":"Ly 700ml","type":"Bao bì","unit":"cái","qty":1000.0,"minQty":200.0,"lastPrice":0.0,"note":""},{"id":"bb-ly-1-lit","name":"Ly 1 Lít","type":"Bao bì","unit":"cái","qty":1000.0,"minQty":200.0,"lastPrice":0.0,"note":""},{"id":"nl-tran-chau-trang","name":"Trân Châu Trắng","type":"Nguyên liệu","unit":"g","qty":1000.0,"minQty":200.0,"lastPrice":0.0,"note":""},{"id":"nl-tran-chau-en","name":"Trân Châu Đen","type":"Nguyên liệu","unit":"g","qty":1000.0,"minQty":200.0,"lastPrice":0.0,"note":""},{"id":"nl-bot-matcha","name":"Bột Matcha","type":"Nguyên liệu","unit":"g","qty":1000.0,"minQty":200.0,"lastPrice":0.0,"note":""},{"id":"nl-sua-oatside","name":"Sữa Oatside","type":"Nguyên liệu","unit":"ml","qty":1000.0,"minQty":200.0,"lastPrice":0.0,"note":""},{"id":"nl-syrup-davinci-hanh-nhan","name":"Syrup Davinci Hạnh Nhân","type":"Nguyên liệu","unit":"ml","qty":750.0,"minQty":200.0,"lastPrice":0.0,"note":""},{"id":"nl-syrup-uong-en-han-quoc-cruzie","name":"Syrup Đường Đen Hàn Quốc Cruzie","type":"Nguyên liệu","unit":"ml","qty":2000.0,"minQty":200.0,"lastPrice":0.0,"note":""},{"id":"nl-bot-ca-cao","name":"Bột Ca Cao","type":"Nguyên liệu","unit":"g","qty":1000.0,"minQty":200.0,"lastPrice":0.0,"note":""},{"id":"nl-hong-tra-cozy","name":"Hồng Trà Cozy","type":"Nguyên liệu","unit":"gói","qty":0,"minQty":0,"lastPrice":0,"note":"Tự bổ sung vì có trong công thức món nhưng thiếu ở tab Nguyên liệu"}];
+const IMPORTED_RECIPES = {"Cà Phê Đen":[["Cà Phê Hạt",20.0],["Ly Cà Phê",1.0]],"Cà Phê Sữa":[["Cà Phê Hạt",20.0],["Ly Cà Phê",1.0],["Sữa Đặc",30.0]],"Bạc Xỉu":[["Cà Phê Hạt",20.0],["Ly Lùn 500ml",1.0],["Sữa Đặc",20.0],["Rích Lùn",10.0],["Sữa Tươi Vinamil",70.0]],"Cà Phê Muối":[["Cà Phê Hạt",20.0],["Sữa Đặc",30.0],["Ly Lùn 500ml",1.0]],"Cà Phê Kem Dẻo BMT":[["Cà Phê Hạt",20.0],["Sữa Đặc",30.0],["Ly Lùn 500ml",1.0]],"Sữa Tươi Cà Phê":[["Cà Phê Hạt",20.0],["Sữa Đặc",20.0],["Rích Lùn",10.0],["Sữa Tươi Vinamil",80.0],["Ly Lùn 500ml",1.0]],"Trà Tắc":[["Trà Nhãn Vàng Cozy",1.0],["Ly 700ml",1.0]],"Trà Tắc 1L":[["Trà Nhãn Vàng Cozy",1.0],["Ly 1 Lít",1.0]],"Trà Chanh":[["Trà Nhãn Vàng Cozy",1.0],["Ly 700ml",1.0]],"Trà Chanh 1L":[["Trà Nhãn Vàng Cozy",1.0],["Ly 1 Lít",1.0]],"Hồng Trà":[["Hồng Trà Cozy",1.0],["Ly 700ml",1.0]],"Hồng Trà 1L":[["Hồng Trà Cozy",1.0],["Ly 1 Lít",1.0]],"Trà Ổi":[["Trà Lài",4.0],["Ly 700ml",1.0],["Trân Châu Trắng",5.0]],"Trà Ổi 1L":[["Trà Lài",5.0],["Ly 1 Lít",1.0],["Trân Châu Trắng",5.0]],"Trà Mãng Cầu Chanh Dây":[["Trà Lài",4.0],["Ly 700ml",1.0]],"Trà Mãng Cầu Chanh Dây 1L":[["Trà Lài",5.0],["Ly 1 Lít",1.0]],"Trà Trái Cây Tươi 1L":[["Trà Lài",5.0],["Ly 1 Lít",1.0]],"Matcha Latte":[["Bột Matcha",4.0],["Sữa Đặc",20.0],["Sữa Tươi Vinamil",70.0],["Ly Lùn 500ml",1.0]],"Matcha Oatside":[["Bột Matcha",4.0],["Sữa Đặc",20.0],["Sữa Oatside",70.0],["Ly Lùn 500ml",1.0],["Rích Lùn",10.0]],"Matcha Kem Muối":[["Bột Matcha",4.0],["Sữa Đặc",20.0],["Sữa Tươi Vinamil",70.0],["Ly Lùn 500ml",1.0],["Rích Lùn",11.0]],"Matcha Latte Hạnh Nhân":[["Bột Matcha",4.0],["Sữa Đặc",20.0],["Sữa Tươi Vinamil",70.0],["Ly Lùn 500ml",1.0],["Syrup Davinci Hạnh Nhân",15.0],["Rích Lùn",12.0]],"Matcha Cold Whisk":[["Bột Matcha",4.0],["Sữa Đặc",20.0],["Sữa Oatside",120.0],["Ly Lùn 500ml",1.0],["Rích Lùn",13.0]],"Trà Sữa Truyền Thống":[["Ly 700ml",1.0],["Trân Châu Đen",5.0]],"Trà Sữa Truyền Thống 1L":[["Ly 1 Lít",1.0],["Trân Châu Đen",5.0]],"Trà Sữa Matcha":[["Ly 700ml",1.0],["Ly 1 Lít",1.0]],"Sữa Tươi Trân Châu Đường Đen":[["Ly 700ml",1.0],["Sữa Tươi Vinamil",200.0],["Rích Lùn",10.0],["Syrup Đường Đen Hàn Quốc Cruzie",20.0],["Trân Châu Đen",5.0]],"Sữa Tươi Trân Châu Đường Đen 1L":[["Ly 1 Lít",1.0],["Sữa Tươi Vinamil",250.0],["Rích Lùn",10.0],["Syrup Đường Đen Hàn Quốc Cruzie",20.0],["Trân Châu Đen",5.0]],"Ca Cao Latte":[["Bột Ca Cao",5.0],["Rích Lùn",10.0],["Sữa Đặc",30.0],["Sữa Tươi Vinamil",70.0],["Ly Lùn 500ml",1.0]],"Ca Cao Kem Muối":[["Bột Ca Cao",5.0],["Rích Lùn",10.0],["Sữa Đặc",30.0],["Sữa Tươi Vinamil",70.0],["Ly Lùn 500ml",1.0]],"Ca Cao Yến Mạch":[["Bột Ca Cao",5.0],["Rích Lùn",10.0],["Sữa Đặc",30.0],["Sữa Oatside",70.0],["Ly Lùn 500ml",1.0]],"Phindi Hạnh Nhân":[["Cà Phê Hạt",20.0],["Ly Lùn 500ml",1.0],["Sữa Đặc",20.0],["Rích Lùn",10.0],["Sữa Tươi Vinamil",70.0],["Syrup Davinci Hạnh Nhân",15.0]]};
 
 const normName = (s='') => String(s).trim().toLocaleLowerCase('vi-VN');
 
@@ -18,18 +18,19 @@ function mergeImportedIngredients(current=[]) {
   for (const incoming of IMPORTED_INGREDIENTS) {
     const idx = result.findIndex(x => normName(x.name) === normName(incoming.name));
     if (idx >= 0) {
-      // Giữ tồn hiện tại nếu người dùng đã có dữ liệu; chỉ bổ sung trường còn thiếu.
-      result[idx] = {
-        ...incoming,
-        ...result[idx],
-        id: result[idx].id || incoming.id,
-        type: result[idx].type || incoming.type,
-        unit: result[idx].unit || incoming.unit,
-        minQty: Number(result[idx].minQty ?? incoming.minQty ?? 0),
-        qty: Number(result[idx].qty ?? incoming.qty ?? 0),
-      };
+      const existing = result[idx];
+      // Chỉ áp dữ liệu tồn ban đầu của file đúng 1 lần.
+      // Sau khi đã nhập, người dùng có thể nhập hàng/kiểm kê bình thường mà không bị reset lại.
+      if (existing.inventoryImportVersion !== INVENTORY_IMPORT_VERSION) {
+        result[idx] = {
+          ...existing,
+          ...incoming,
+          id: existing.id || incoming.id,
+          inventoryImportVersion: INVENTORY_IMPORT_VERSION
+        };
+      }
     } else {
-      result.push({...incoming});
+      result.push({...incoming, inventoryImportVersion: INVENTORY_IMPORT_VERSION});
     }
   }
   return result;
@@ -37,14 +38,17 @@ function mergeImportedIngredients(current=[]) {
 
 function applyImportedRecipes(currentProducts=[], mergedIngredients=[]) {
   const idByName = Object.fromEntries(mergedIngredients.map(x => [normName(x.name), x.id]));
+  const recipeByName = Object.fromEntries(Object.entries(IMPORTED_RECIPES).map(([k,v]) => [normName(k), v]));
   return currentProducts.map(product => {
-    const raw = IMPORTED_RECIPES[product.name];
+    const raw = recipeByName[normName(product.name)];
     if (!raw) return product;
+    // Công thức từ file cũng chỉ áp đúng 1 lần để sau này chủ quán vẫn sửa thủ công được.
+    if (product.recipeImportVersion === INVENTORY_IMPORT_VERSION) return product;
     const recipe = raw.map(([ingredientName, qty]) => ({
       ingredientId: idByName[normName(ingredientName)],
       qty: Number(qty)
     })).filter(x => x.ingredientId);
-    return {...product, recipe};
+    return {...product, recipe, recipeImportVersion: INVENTORY_IMPORT_VERSION};
   });
 }
 
@@ -274,7 +278,7 @@ export default function NhaGeApp() {
   if (syncState === 'error' && !dataReady) return <SyncErrorScreen message={syncError} />;
 
   return <div className="app-shell">
-    <header className="topbar"><div><div className="brand">TIỆM NHÀ GÉ</div><div className="date">Quản lý quán · Bản 0.15 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn" onClick={() => setScreen('more')}>⋯</button></header>
+    <header className="topbar"><div><div className="brand">TIỆM NHÀ GÉ</div><div className="date">Quản lý quán · Bản 0.16 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn" onClick={() => setScreen('more')}>⋯</button></header>
     <main>
       <div className="page-transition" key={screen}>
       {role==='admin' && screen === 'home' && <Home todayRevenue={todayRevenue} dayOrders={dayOrders} todayQty={todayQty} cashToday={cashToday} bankToday={bankToday} knownCostToday={knownCostToday} ingredients={ingredients} closings={dayClosings} go={setScreen} openOrders={() => {setScreen('order');setOrderTab('list')}} />}
@@ -317,7 +321,7 @@ function AuthScreen(){
   return <div className="auth-shell"><div className="auth-card"><div className="auth-logo">GÉ</div><h1>Quản lý quán</h1><p>Đăng nhập để dùng chung dữ liệu trên điện thoại và máy tính.</p><form className="auth-form" onSubmit={submit}><label>Tên đăng nhập<input required value={username} onChange={e=>setUsername(e.target.value)} autoCapitalize="none" /></label><label>Mật khẩu<div className="password-field"><input type={showPassword?'text':'password'} required value={password} onChange={e=>setPassword(e.target.value)} /><button type="button" className="password-eye" onClick={()=>setShowPassword(v=>!v)} aria-label={showPassword?'Ẩn mật khẩu':'Xem mật khẩu'}>{showPassword?'◉':'◌'}</button></div></label>{message&&<div className="auth-message">{message}</div>}<button className="primary full" disabled={busy}>{busy?'Đang đăng nhập…':'Đăng nhập'}</button></form><p className="hint">Tài khoản chủ quán ban đầu: <b>Admin</b>. Sau khi kết nối dữ liệu, nên đổi mật khẩu mặc định.</p></div></div>
 }
 function LoadingScreen({text}){ return <div className="auth-shell"><div className="auth-card center"><div className="spinner"></div><strong>{text}</strong></div></div> }
-function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.15 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
+function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.16 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
 function SyncErrorScreen({message}){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa tải được dữ liệu</h1><p>Hãy kiểm tra đã chạy file <b>supabase.sql</b> trong Supabase chưa.</p><div className="auth-message">{message}</div></div></div> }
 
 function Nav({active,icon,label,onClick}) { return <button className={'nav-item '+(active?'active':'')} onClick={onClick}><span>{icon}</span><small>{label}</small></button> }
