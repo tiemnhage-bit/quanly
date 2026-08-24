@@ -405,3 +405,67 @@ button:active{
     font-size:12px;
   }
 }
+
+/* 0.12.3 - Sản phẩm / nguồn bán trên mobile cuộn ngang rõ ràng */
+@media(max-width:700px){
+  .report-table-card{
+    overflow:hidden;
+  }
+  .report-table{
+    overflow-x:auto;
+    overflow-y:hidden;
+    -webkit-overflow-scrolling:touch;
+    padding-bottom:6px;
+  }
+  .report-table::after{
+    content:"Vuốt ngang để xem thêm →";
+    display:block;
+    position:sticky;
+    left:0;
+    width:max-content;
+    margin-top:8px;
+    padding:5px 8px;
+    border-radius:999px;
+    background:#f4f4f4;
+    color:var(--muted);
+    font-size:10px;
+  }
+  .report-tr{
+    min-width:680px;
+  }
+  .report-source{
+    min-width:620px;
+  }
+}
+
+/* Danh mục chi phí dùng nút lên/xuống thay vì kéo */
+.category-order-list .category-row{
+  grid-template-columns:auto minmax(0,1fr) auto;
+}
+.category-move-buttons{
+  display:grid;
+  grid-template-columns:28px 28px;
+  gap:4px;
+}
+.category-move-buttons button{
+  width:28px;
+  height:28px;
+  padding:0;
+  border:1px solid var(--line);
+  background:#f7f7f7;
+  border-radius:8px;
+  font-size:14px;
+}
+.category-move-buttons button:disabled{
+  opacity:.28;
+  cursor:not-allowed;
+}
+@media(max-width:480px){
+  .category-order-list .category-row{
+    grid-template-columns:auto minmax(0,1fr);
+  }
+  .category-actions{
+    grid-column:1/-1;
+    justify-content:flex-end;
+  }
+}

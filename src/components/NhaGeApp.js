@@ -54,7 +54,7 @@ export default function NhaGeApp() {
   const [dataReady, setDataReady] = useState(false);
   const [syncState, setSyncState] = useState('idle');
   const [syncError, setSyncError] = useState('');
-  const [screen, setScreen] = useState('home');
+  const [screen, setScreen] = useState('order');
   const [orderTab, setOrderTab] = useState('new');
   const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState(initialProducts);
@@ -228,7 +228,7 @@ export default function NhaGeApp() {
   if (syncState === 'error' && !dataReady) return <SyncErrorScreen message={syncError} />;
 
   return <div className="app-shell">
-    <header className="topbar"><div><div className="brand">TIỆM NHÀ GÉ</div><div className="date">Quản lý quán · Bản 0.12.2.2.2 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn" onClick={() => setScreen('more')}>⋯</button></header>
+    <header className="topbar"><div><div className="brand">TIỆM NHÀ GÉ</div><div className="date">Quản lý quán · Bản 0.12.3.3.2.2 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn" onClick={() => setScreen('more')}>⋯</button></header>
     <main>
       <div className="page-transition" key={screen}>
       {screen === 'home' && <Home todayRevenue={todayRevenue} dayOrders={dayOrders} todayQty={todayQty} cashToday={cashToday} bankToday={bankToday} knownCostToday={knownCostToday} ingredients={ingredients} go={setScreen} openOrders={() => {setScreen('order');setOrderTab('list')}} />}
@@ -239,7 +239,13 @@ export default function NhaGeApp() {
       {screen === 'more' && <More go={setScreen} user={user} onSignOut={signOut} syncState={syncState} />}
       </div>
     </main>
-    <nav className="bottom-nav"><Nav active={screen==='home'} icon="⌂" label="Trang chủ" onClick={()=>setScreen('home')} /><Nav active={screen==='order'} icon="＋" label="Bán hàng" onClick={()=>setScreen('order')} /><Nav active={screen==='stock'} icon="▦" label="Kho" onClick={()=>setScreen('stock')} /><Nav active={screen==='cash'} icon="₫" label="Thu chi" onClick={()=>setScreen('cash')} /><Nav active={screen==='reports'} icon="▤" label="Báo cáo" onClick={()=>setScreen('reports')} /></nav>
+    <nav className="bottom-nav">
+      <Nav active={screen==='stock'} icon="▦" label="Kho" onClick={()=>setScreen('stock')} />
+      <Nav active={screen==='order'} icon="＋" label="Order" onClick={()=>setScreen('order')} />
+      <Nav active={screen==='home'} icon="⌂" label="Trang chủ" onClick={()=>setScreen('home')} />
+      <Nav active={screen==='cash'} icon="₫" label="Thu chi" onClick={()=>setScreen('cash')} />
+      <Nav active={screen==='reports'} icon="▤" label="Báo cáo" onClick={()=>setScreen('reports')} />
+    </nav>
     {selectedOrder && <OrderDrawer order={selectedOrder} onClose={()=>setSelectedOrder(null)} onCancel={cancelOrder} onSave={saveOrderEdit} />}
   </div>;
 }
@@ -256,7 +262,7 @@ function AuthScreen(){
   return <div className="auth-shell"><div className="auth-card"><div className="auth-logo">GÉ</div><h1>Quản lý quán</h1><p>Đăng nhập để dùng chung dữ liệu trên điện thoại và máy tính.</p><form className="auth-form" onSubmit={submit}><label>Tên đăng nhập<input required value={username} onChange={e=>setUsername(e.target.value)} autoCapitalize="none" /></label><label>Mật khẩu<input type="password" required minLength="6" value={password} onChange={e=>setPassword(e.target.value)} /></label>{message&&<div className="auth-message">{message}</div>}<button className="primary full" disabled={busy}>{busy?'Đang đăng nhập…':'Đăng nhập'}</button></form><p className="hint">Tài khoản chủ quán ban đầu: <b>Admin</b>. Sau khi kết nối dữ liệu, nên đổi mật khẩu mặc định.</p></div></div>
 }
 function LoadingScreen({text}){ return <div className="auth-shell"><div className="auth-card center"><div className="spinner"></div><strong>{text}</strong></div></div> }
-function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.12.2.2.2 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
+function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.12.3.3.2.2 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
 function SyncErrorScreen({message}){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa tải được dữ liệu</h1><p>Hãy kiểm tra đã chạy file <b>supabase.sql</b> trong Supabase chưa.</p><div className="auth-message">{message}</div></div></div> }
 
 function Nav({active,icon,label,onClick}) { return <button className={'nav-item '+(active?'active':'')} onClick={onClick}><span>{icon}</span><small>{label}</small></button> }
@@ -435,14 +441,13 @@ function Cash({orders,receipts,transactions,setTransactions,categories,setCatego
   const [showCategory,setShowCategory]=useState(false);
   const [form,setForm]=useState({type:'Chi',category:'Khác',amount:'',payment:'Chuyển khoản',date:todayISO(),note:''});
   const [newCategory,setNewCategory]=useState('');
-  const [dragCategory,setDragCategory]=useState(null);
 
   const validOrders=(orders||[]).filter(o=>o.status!=='Đã hủy');
   const orderIncome=validOrders.map(o=>({
     id:'ORDER-'+o.id,
     date:o.date,
     type:'Thu',
-    category:o.source==='Tại quán'?'Bán hàng tại quán':'App Food',
+    category:o.source==='Tại quán'?'Order tại quán':'App Food',
     amount:Number(o.total||0),
     payment:o.payment,
     note:o.source,
@@ -502,19 +507,17 @@ function Cash({orders,receipts,transactions,setTransactions,categories,setCatego
     setCategories(prev=>prev.filter(c=>c!==name));
   }
 
-  function moveCategory(target){
-    if(!dragCategory||dragCategory===target)return;
+  function moveCategoryStep(name,direction){
     setCategories(prev=>{
       const next=[...prev];
-      const from=next.indexOf(dragCategory);
-      const to=next.indexOf(target);
-      if(from<0||to<0)return prev;
-      const [picked]=next.splice(from,1);
-      next.splice(to,0,picked);
+      const index=next.indexOf(name);
+      const target=index+direction;
+      if(index<0||target<0||target>=next.length)return prev;
+      [next[index],next[target]]=[next[target],next[index]];
       return next;
     });
-    setDragCategory(null);
   }
+
 
   return <section className="screen cash-screen">
     <div className="screen-head cash-head">
@@ -559,18 +562,13 @@ function Cash({orders,receipts,transactions,setTransactions,categories,setCatego
 
     {showCategory&&<Modal title="Danh mục chi phí" close={()=>setShowCategory(false)} className="category-modal">
       <div className="category-modal-body">
-        <p className="hint">Giữ và kéo nút ⋮⋮ để sắp xếp thứ tự danh mục. Thứ tự này sẽ được dùng trong ô chọn khi ghi khoản chi mới.</p>
-        <div className="category-list draggable-category-list">
-          {categories.map(c=><div
-            className={'category-row '+(dragCategory===c?'is-dragging':'')}
-            key={c}
-            draggable
-            onDragStart={()=>setDragCategory(c)}
-            onDragEnd={()=>setDragCategory(null)}
-            onDragOver={e=>e.preventDefault()}
-            onDrop={()=>moveCategory(c)}
-          >
-            <button type="button" className="drag-handle" aria-label={`Kéo ${c}`} title="Giữ và kéo để sắp xếp">⋮⋮</button>
+        <p className="hint">Dùng nút ↑ / ↓ để sắp xếp thứ tự. Thứ tự này sẽ dùng trong ô chọn khi ghi khoản chi mới.</p>
+        <div className="category-list category-order-list">
+          {categories.map((c,index)=><div className="category-row" key={c}>
+            <div className="category-move-buttons">
+              <button type="button" disabled={index===0} onClick={()=>moveCategoryStep(c,-1)} title="Đưa lên">↑</button>
+              <button type="button" disabled={index===categories.length-1} onClick={()=>moveCategoryStep(c,1)} title="Đưa xuống">↓</button>
+            </div>
             <strong>{c}</strong>
             <div className="category-actions">
               <button type="button" onClick={()=>renameCategory(c)}>Sửa</button>
