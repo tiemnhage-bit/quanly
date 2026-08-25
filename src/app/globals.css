@@ -776,3 +776,63 @@ button:active{
     font-size:11px;
   }
 }
+
+/* 0.17 - Popup dài có thanh cuộn */
+.modal-card{
+  max-height:88dvh!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  scrollbar-width:thin;
+  scrollbar-color:#f58a1f #f2f2f2;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+}
+.modal-card::-webkit-scrollbar{width:8px}
+.modal-card::-webkit-scrollbar-track{background:#f2f2f2;border-radius:999px}
+.modal-card::-webkit-scrollbar-thumb{background:#f58a1f;border-radius:999px}
+.modal-card>.form-card,.category-modal-body{padding-bottom:18px}
+@media(max-width:700px){
+  .modal-card,.cash-modal,.category-modal,.opening-modal{max-height:86dvh!important}
+}
+
+/* Nút cài đặt */
+.settings-btn{
+  background:#f58a1f!important;color:#fff!important;border-color:#f58a1f!important;
+  font-size:19px!important;font-weight:700;box-shadow:0 5px 14px rgba(245,138,31,.22)
+}
+.settings-btn:hover{background:#e87d13!important}
+.settings-btn:active{transform:scale(.94) rotate(12deg)}
+
+/* Lọc đơn */
+.order-date-filter{display:grid;gap:10px}
+.order-filter-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.order-filter-head small{color:var(--muted);font-weight:700}
+.order-date-mode{grid-template-columns:repeat(3,1fr)}
+.compact-date-input,.date-range-grid label{display:grid;gap:6px;font-size:12px;font-weight:700}
+.compact-date-input input,.date-range-grid input{
+  width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#fff
+}
+.date-range-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:560px){
+  .date-range-grid{grid-template-columns:1fr}
+  .order-date-mode{overflow-x:auto;display:flex}
+  .order-date-mode button{min-width:104px;flex:1}
+}
+
+/* Biểu đồ doanh thu bấm xem số */
+.daily-chart .bar-col{border:0!important;background:transparent!important;padding:0!important;cursor:pointer}
+.daily-chart .bar-col.selected .bar-wrap{outline:2px solid #f58a1f;outline-offset:2px}
+.chart-selected-value{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  margin-top:12px;padding:10px 12px;border-radius:12px;background:#fff3e3;border:1px solid #f4c486;color:#8d4b06
+}
+.chart-selected-value strong{font-size:17px}
+
+/* Danh sách đơn trong báo cáo theo ngày */
+.report-day-orders{display:grid;gap:10px}
+.report-day-orders-head p{margin:3px 0 0;color:var(--muted);font-size:12px}
+.compact-orders-list .order-row{padding-left:0;padding-right:0}
+@media(min-width:760px){.report-screen>.report-day-orders{grid-column:2/span 10}}
+
+/* Xóa nguyên liệu */
+.ingredient-delete-btn{margin-top:2px}

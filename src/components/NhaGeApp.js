@@ -278,16 +278,16 @@ export default function NhaGeApp() {
   if (syncState === 'error' && !dataReady) return <SyncErrorScreen message={syncError} />;
 
   return <div className="app-shell">
-    <header className="topbar"><div><div className="brand">TIỆM NHÀ GÉ</div><div className="date">Quản lý quán · Bản 0.16 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn" onClick={() => setScreen('more')}>⋯</button></header>
+    <header className="topbar"><div><div className="brand">TIỆM NHÀ GÉ</div><div className="date">Quản lý quán · Bản 0.17 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn settings-btn" aria-label="Cài đặt" title="Cài đặt" onClick={() => setScreen('more')}>⚙</button></header>
     <main>
       <div className="page-transition" key={screen}>
       {role==='admin' && screen === 'home' && <Home todayRevenue={todayRevenue} dayOrders={dayOrders} todayQty={todayQty} cashToday={cashToday} bankToday={bankToday} knownCostToday={knownCostToday} ingredients={ingredients} closings={dayClosings} go={setScreen} openOrders={() => {setScreen('order');setOrderTab('list')}} />}
       {screen === 'order' && <OrdersScreen products={products.filter(p=>p.active!==false)} tab={orderTab} setTab={setOrderTab} cart={cart} addProduct={addProduct} changeQty={changeQty} payment={payment} setPayment={setPayment} discount={discount} setDiscount={setDiscount} completeOrder={completeOrder} orders={orders} openOrder={setSelectedOrder} goFood={() => role==='admin' && setScreen('foodapp')} />}
       {role==='admin' && screen === 'foodapp' && <FoodAppForm form={foodForm} setForm={setFoodForm} products={products.filter(p=>p.active!==false)} cart={foodCart} addProduct={addFoodProduct} changeQty={changeFoodQty} onSubmit={saveFoodOrder} back={() => {setScreen('order');setOrderTab('list')}} />}
       {role==='admin' && screen === 'products' && <ProductManager products={products} setProducts={setProducts} ingredients={ingredients} back={()=>setScreen('more')} />}
-      {role==='admin' && screen === 'stock' && <Stock ingredients={ingredients} setIngredients={setIngredients} receipts={stockReceipts} setReceipts={setStockReceipts} counts={stockCounts} setCounts={setStockCounts} adjustments={stockAdjustments} setAdjustments={setStockAdjustments} />}
+      {role==='admin' && screen === 'stock' && <Stock ingredients={ingredients} setIngredients={setIngredients} receipts={stockReceipts} setReceipts={setStockReceipts} counts={stockCounts} setCounts={setStockCounts} adjustments={stockAdjustments} setAdjustments={setStockAdjustments} products={products} setProducts={setProducts} />}
       {role==='admin' && screen === 'cash' && <Cash orders={orders} receipts={stockReceipts} transactions={cashTransactions} setTransactions={setCashTransactions} categories={expenseCategories} setCategories={setExpenseCategories} openingBalances={openingBalances} setOpeningBalances={setOpeningBalances} />}
-      {role==='admin' && screen === 'reports' && <Reports orders={orders} products={products} receipts={stockReceipts} transactions={cashTransactions} />}
+      {role==='admin' && screen === 'reports' && <Reports orders={orders} products={products} receipts={stockReceipts} transactions={cashTransactions} openOrder={setSelectedOrder} />}
       {role==='admin' && screen === 'closeDay' && <CloseDay orders={orders} receipts={stockReceipts} transactions={cashTransactions} closings={dayClosings} setClosings={setDayClosings} back={()=>setScreen('home')} />}
       {role==='admin' && screen === 'employees' && <EmployeeAccounts user={user} back={()=>setScreen('more')} />}
       {screen === 'more' && <More role={role} memberInfo={memberInfo} go={setScreen} user={user} onSignOut={signOut} syncState={syncState} />}
@@ -321,7 +321,7 @@ function AuthScreen(){
   return <div className="auth-shell"><div className="auth-card"><div className="auth-logo">GÉ</div><h1>Quản lý quán</h1><p>Đăng nhập để dùng chung dữ liệu trên điện thoại và máy tính.</p><form className="auth-form" onSubmit={submit}><label>Tên đăng nhập<input required value={username} onChange={e=>setUsername(e.target.value)} autoCapitalize="none" /></label><label>Mật khẩu<div className="password-field"><input type={showPassword?'text':'password'} required value={password} onChange={e=>setPassword(e.target.value)} /><button type="button" className="password-eye" onClick={()=>setShowPassword(v=>!v)} aria-label={showPassword?'Ẩn mật khẩu':'Xem mật khẩu'}>{showPassword?'◉':'◌'}</button></div></label>{message&&<div className="auth-message">{message}</div>}<button className="primary full" disabled={busy}>{busy?'Đang đăng nhập…':'Đăng nhập'}</button></form><p className="hint">Tài khoản chủ quán ban đầu: <b>Admin</b>. Sau khi kết nối dữ liệu, nên đổi mật khẩu mặc định.</p></div></div>
 }
 function LoadingScreen({text}){ return <div className="auth-shell"><div className="auth-card center"><div className="spinner"></div><strong>{text}</strong></div></div> }
-function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.16 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
+function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.17 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
 function SyncErrorScreen({message}){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa tải được dữ liệu</h1><p>Hãy kiểm tra đã chạy file <b>supabase.sql</b> trong Supabase chưa.</p><div className="auth-message">{message}</div></div></div> }
 
 function Nav({active,icon,label,onClick}) { return <button className={'nav-item '+(active?'active':'')} onClick={onClick}><span>{icon}</span><small>{label}</small></button> }
@@ -342,24 +342,83 @@ function Home({todayRevenue,dayOrders,todayQty,cashToday,bankToday,knownCostToda
 }
 
 function OrdersScreen({products,tab,setTab,cart,addProduct,changeQty,payment,setPayment,discount,setDiscount,completeOrder,orders,openOrder,goFood}) {
-  const [query,setQuery] = useState(''); const [source,setSource] = useState('Tất cả'); const [category,setCategory] = useState('Tất cả');
+  const [query,setQuery] = useState('');
+  const [source,setSource] = useState('Tất cả');
+  const [category,setCategory] = useState('Tất cả');
+  const [dateMode,setDateMode] = useState('all');
+  const [dateFrom,setDateFrom] = useState(todayISO());
+  const [dateTo,setDateTo] = useState(todayISO());
+
   const categories = ['Tất cả', ...Array.from(new Set(products.map(p=>p.category).filter(Boolean)))];
-  const shownProducts = products.filter(p=>category==='Tất cả'||p.category===category).filter(p=>p.name.toLowerCase().includes(query.toLowerCase()));
-  const filteredOrders = orders.filter(o => (source==='Tất cả'||o.source===source) && (o.id.toLowerCase().includes(query.toLowerCase())||o.source.toLowerCase().includes(query.toLowerCase())));
+  const shownProducts = products
+    .filter(p=>category==='Tất cả'||p.category===category)
+    .filter(p=>p.name.toLowerCase().includes(query.toLowerCase()));
+
+  const filteredOrders = orders.filter(o => {
+    const sourceOk = source==='Tất cả'||o.source===source;
+    const q = query.trim().toLowerCase();
+    const queryOk = !q
+      || String(o.id||'').toLowerCase().includes(q)
+      || String(o.source||'').toLowerCase().includes(q)
+      || (o.items||[]).some(x=>String(x.name||'').toLowerCase().includes(q));
+
+    let dateOk = true;
+    if(dateMode==='day') dateOk = String(o.date||'')===dateFrom;
+    if(dateMode==='range') dateOk = String(o.date||'')>=dateFrom && String(o.date||'')<=dateTo;
+    return sourceOk && queryOk && dateOk;
+  });
+
   const subtotal = cart.reduce((s,x)=>s+x.price*x.qty,0);
   const discountValue = Math.max(0, Math.min(Number(discount || 0), subtotal));
   const total = subtotal - discountValue;
+
   return <section className="screen">
     <div className="segmented"><button className={tab==='new'?'active':''} onClick={()=>setTab('new')}>Tạo đơn</button><button className={tab==='list'?'active':''} onClick={()=>setTab('list')}>Danh sách đơn</button></div>
+
     {tab==='new' ? <>
       <div className="search-row"><input placeholder="Tìm món..." value={query} onChange={e=>setQuery(e.target.value)} /></div>
       <div className="chips">{categories.map(c=><button key={c} className={'chip '+(category===c?'active':'')} onClick={()=>setCategory(c)}>{c}</button>)}</div>
       <div className="products">{shownProducts.map(p=>{const selected=cart.find(x=>x.id===p.id);return <button className={'product '+(selected?'selected':'')} key={p.id} onClick={()=>addProduct(p)}><span>{p.name}</span><strong>{fmt(p.price)}</strong>{selected&&<em className="selected-badge">×{selected.qty}</em>}</button>})}</div>
-      <div className="card order-card"><div className="section-title">Đơn hiện tại</div>{!cart.length?<div className="empty">Chưa có món</div>:cart.map(x=><div className="cart-row" key={x.id}><div><strong>{x.name}</strong><small>{fmt(x.price)}</small></div><div className="qty"><button onClick={()=>changeQty(x.id,-1)}>−</button><span>{x.qty}</span><button onClick={()=>changeQty(x.id,1)}>+</button></div></div>)}<div className="discount-box"><label>Giảm giá<input type="number" min="0" max={subtotal} value={discount} onChange={e=>setDiscount(e.target.value)} placeholder="0" /></label></div>{discountValue>0&&<div className="summary-line"><span>Tạm tính</span><strong>{fmt(subtotal)}</strong></div>}<div className="summary-line total"><span>Khách thanh toán</span><strong>{fmt(total)}</strong></div><div className="payment-grid">{['Tiền mặt','Chuyển khoản'].map(x=><button key={x} className={'pay '+(payment===x?'active':'')} onClick={()=>setPayment(x)}>{x}</button>)}</div><button className="primary full" onClick={completeOrder}>Hoàn tất đơn</button></div>
+      <div className="card order-card">
+        <div className="section-title">Đơn hiện tại</div>
+        {!cart.length?<div className="empty">Chưa có món</div>:cart.map(x=><div className="cart-row" key={x.id}><div><strong>{x.name}</strong><small>{fmt(x.price)}</small></div><div className="qty"><button onClick={()=>changeQty(x.id,-1)}>−</button><span>{x.qty}</span><button onClick={()=>changeQty(x.id,1)}>+</button></div></div>)}
+        <div className="discount-box"><label>Giảm giá<input type="number" min="0" max={subtotal} value={discount} onChange={e=>setDiscount(e.target.value)} placeholder="0" /></label></div>
+        {discountValue>0&&<div className="summary-line"><span>Tạm tính</span><strong>{fmt(subtotal)}</strong></div>}
+        <div className="summary-line total"><span>Khách thanh toán</span><strong>{fmt(total)}</strong></div>
+        <div className="payment-grid">{['Tiền mặt','Chuyển khoản'].map(x=><button key={x} className={'pay '+(payment===x?'active':'')} onClick={()=>setPayment(x)}>{x}</button>)}</div>
+        <button className="primary full" onClick={completeOrder}>Hoàn tất đơn</button>
+      </div>
     </> : <>
-      <div className="list-tools"><input placeholder="Tìm mã đơn / nguồn bán" value={query} onChange={e=>setQuery(e.target.value)} /><select value={source} onChange={e=>setSource(e.target.value)}><option>Tất cả</option><option>Tại quán</option><option>GrabFood</option><option>ShopeeFood</option></select></div>
+      <div className="list-tools">
+        <input placeholder="Tìm mã đơn / món / nguồn bán" value={query} onChange={e=>setQuery(e.target.value)} />
+        <select value={source} onChange={e=>setSource(e.target.value)}>
+          <option>Tất cả</option><option>Tại quán</option><option>Grab Food</option><option>Shopee Food</option><option>Green Food</option><option>Be Food</option><option>Khác</option>
+        </select>
+      </div>
+
+      <div className="card order-date-filter">
+        <div className="order-filter-head">
+          <strong>Thời gian xem đơn</strong>
+          <small>{filteredOrders.length} đơn</small>
+        </div>
+        <div className="segmented order-date-mode">
+          <button className={dateMode==='all'?'active':''} onClick={()=>setDateMode('all')}>Tất cả</button>
+          <button className={dateMode==='day'?'active':''} onClick={()=>setDateMode('day')}>Theo ngày</button>
+          <button className={dateMode==='range'?'active':''} onClick={()=>setDateMode('range')}>Khoảng ngày</button>
+        </div>
+        {dateMode==='day'&&<label className="compact-date-input">Ngày<input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)}/></label>}
+        {dateMode==='range'&&<div className="date-range-grid">
+          <label>Từ ngày<input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)}/></label>
+          <label>Đến ngày<input type="date" value={dateTo} min={dateFrom} onChange={e=>setDateTo(e.target.value)}/></label>
+        </div>}
+      </div>
+
       <button className="primary full" onClick={goFood}>+ Nhập đơn từ App Food</button>
-      <div className="orders-list">{filteredOrders.map(o=><button className="order-row" key={o.id} onClick={()=>openOrder(o)}><div><strong>{o.source}</strong><small>{o.date} · {o.time} · {o.totalQty} ly / sản phẩm</small><span className={'status '+(o.status==='Đã hủy'?'cancel':'')}>{o.status}</span></div><div className="order-money"><strong>{fmt(o.total)}</strong><small>{o.payment}{Number(o.discount||0)>0?` · Giảm ${fmt(o.discount)}`:''}</small><span>›</span></div></button>)}</div>
+      <div className="orders-list">
+        {filteredOrders.length
+          ? filteredOrders.map(o=><button className="order-row" key={o.id} onClick={()=>openOrder(o)}><div><strong>{o.source}</strong><small>{o.date} · {o.time} · {o.totalQty} ly / sản phẩm</small><span className={'status '+(o.status==='Đã hủy'?'cancel':'')}>{o.status}</span></div><div className="order-money"><strong>{fmt(o.total)}</strong><small>{o.payment}{Number(o.discount||0)>0?` · Giảm ${fmt(o.discount)}`:''}</small><span>›</span></div></button>)
+          : <div className="card empty">Không có đơn trong khoảng thời gian này.</div>}
+      </div>
     </>}
   </section>
 }
@@ -468,7 +527,7 @@ function OrderDrawer({order,onClose,onCancel,onSave,readOnly=false}) {
   function save(){ onSave({...draft, discount:draftDiscount, total:draftTotal}); }
   return <div className="overlay" onClick={onClose}><aside className="drawer" onClick={e=>e.stopPropagation()}><div className="drawer-head"><div><small>MÃ ĐƠN</small><strong>{order.id}</strong></div><button onClick={onClose}>×</button></div><div className="detail-grid"><div><small>Ngày bán</small><strong>{draft.date}</strong></div><div><small>Nguồn</small><strong>{draft.source}</strong></div><label><small>Số ly / sản phẩm</small><input type="number" value={draft.totalQty} readOnly={readOnly} onChange={e=>setDraft({...draft,totalQty:Number(e.target.value)})}/></label><label><small>Tạm tính</small><input type="number" value={draftSubtotal} readOnly={readOnly} onChange={e=>setDraft({...draft,subtotal:Number(e.target.value)})}/></label><label><small>Giảm giá</small><input type="number" min="0" value={draft.discount||0} readOnly={readOnly} onChange={e=>setDraft({...draft,discount:Number(e.target.value)})}/></label><div><small>Khách thanh toán</small><strong>{fmt(draftTotal)}</strong></div></div>{draft.items?.length>0&&<div className="card flat"><div className="section-title">Chi tiết món</div>{draft.items.map((x,i)=><div className="summary-line" key={i}><span>{x.name} × {x.qty}</span><strong>{fmt(x.price*x.qty)}</strong></div>)}</div>}<label className="drawer-note"><small>Ghi chú</small><textarea value={draft.note||''} onChange={e=>setDraft({...draft,note:e.target.value})}/></label><button className="primary full" onClick={save}>Lưu chỉnh sửa</button>{order.status!=='Đã hủy'&&<button className="danger full" onClick={()=>onCancel(order.id)}>Hủy đơn</button>}</aside></div> }
 
-function Stock({ingredients,setIngredients,receipts,setReceipts,counts,setCounts,adjustments,setAdjustments}){
+function Stock({ingredients,setIngredients,receipts,setReceipts,counts,setCounts,adjustments,setAdjustments,products=[],setProducts}){
   const [tab,setTab]=useState('inventory'); const [modal,setModal]=useState(null);
   const [ingForm,setIngForm]=useState({id:null,name:'',type:'Nguyên liệu',unit:'g',qty:'',minQty:''});
   const [receipt,setReceipt]=useState({date:todayISO(),ingredientId:'',qty:'',total:'',payment:'Chuyển khoản'});
@@ -476,6 +535,17 @@ function Stock({ingredients,setIngredients,receipts,setReceipts,counts,setCounts
   const [adjust,setAdjust]=useState({date:todayISO(),ingredientId:'',qty:'',reason:'Hư hao',note:''});
   const ingMap=Object.fromEntries(ingredients.map(x=>[x.id,x]));
   function saveIngredient(e){e.preventDefault(); if(!ingForm.name.trim())return; const item={...ingForm,id:ingForm.id||`NL-${Date.now()}`,qty:Number(ingForm.qty||0),minQty:Number(ingForm.minQty||0)}; setIngredients(v=>ingForm.id?v.map(x=>x.id===item.id?item:x):[...v,item]);setIngForm({id:null,name:'',type:'Nguyên liệu',unit:'g',qty:'',minQty:''});setModal(null);}
+  function deleteIngredient(){
+    if(!ingForm.id)return;
+    const usedBy=(products||[]).filter(p=>(p.recipe||[]).some(r=>r.ingredientId===ingForm.id));
+    const extra=usedBy.length?`\nNguyên liệu này đang nằm trong công thức của ${usedBy.length} món. Hệ thống sẽ gỡ nguyên liệu khỏi các công thức đó.`:'';
+    if(!confirm(`Xóa "${ingForm.name}" khỏi danh mục kho?${extra}\nLịch sử nhập/kiểm kê cũ vẫn được giữ.`))return;
+    const id=ingForm.id;
+    setIngredients(v=>v.filter(x=>x.id!==id));
+    if(setProducts) setProducts(prev=>prev.map(p=>({...p,recipe:(p.recipe||[]).filter(r=>r.ingredientId!==id)})));
+    setIngForm({id:null,name:'',type:'Nguyên liệu',unit:'g',qty:'',minQty:''});
+    setModal(null);
+  }
   function editIngredient(x){setIngForm({...x});setModal('ingredient');}
   function saveReceipt(e){e.preventDefault(); const q=Number(receipt.qty||0);if(!receipt.ingredientId||q<=0)return alert('Chọn nguyên liệu và nhập số lượng.');setIngredients(v=>v.map(x=>x.id===receipt.ingredientId?{...x,qty:Number(x.qty||0)+q}:x));setReceipts(v=>[{id:`PN-${Date.now()}`,...receipt,qty:q,total:Number(receipt.total||0)},...v]);setReceipt({date:todayISO(),ingredientId:'',qty:'',total:'',payment:'Chuyển khoản'});setModal(null);}
   function saveCount(e){e.preventDefault();const ing=ingMap[count.ingredientId];if(!ing)return;const actual=Number(count.actual||0),before=Number(ing.qty||0),diff=actual-before;setIngredients(v=>v.map(x=>x.id===ing.id?{...x,qty:actual}:x));setCounts(v=>[{id:`KK-${Date.now()}`,...count,name:ing.name,unit:ing.unit,before,actual,diff},...v]);setCount({date:todayISO(),ingredientId:'',actual:'',note:''});setModal(null);}
@@ -486,7 +556,7 @@ function Stock({ingredients,setIngredients,receipts,setReceipts,counts,setCounts
   {tab==='receipts'&&<><button className="primary full" onClick={()=>setModal('receipt')}>+ Tạo phiếu nhập hàng</button><div className="card stock-list">{receipts.length?receipts.map(r=><div className="stock-row" key={r.id}><div><strong>{ingMap[r.ingredientId]?.name||'Nguyên liệu'}</strong><small>{r.date} · {r.payment}</small></div><span>+{r.qty} {ingMap[r.ingredientId]?.unit||''}<small>{r.total?fmt(r.total):''}</small></span></div>):<div className="empty">Chưa có phiếu nhập.</div>}</div></>}
   {tab==='counts'&&<><button className="primary full" onClick={()=>setModal('count')}>+ Kiểm kê kho</button><div className="card stock-list">{counts.length?counts.map(c=><div className="stock-row" key={c.id}><div><strong>{c.name}</strong><small>{c.date} · Hệ thống {c.before} {c.unit}</small></div><span>{c.actual} {c.unit}<small>Lệch {c.diff>0?'+':''}{c.diff}</small></span></div>):<div className="empty">Chưa có lần kiểm kê.</div>}</div></>}
   {tab==='history'&&<div className="card stock-list">{history.length?history.map(h=><div className="stock-row" key={h.id}><div><strong>{h.kind} · {h.name||ingMap[h.ingredientId]?.name||''}</strong><small>{h.date}{h.reason&&h.kind!=='Bán hàng'?` · ${h.reason}`:''}{h.refId?` · ${h.refId}`:''}</small></div><span>{Number(h.qty)>0?'+':''}{h.qty} {h.unit||ingMap[h.ingredientId]?.unit||''}</span></div>):<div className="empty">Chưa có lịch sử kho.</div>}</div>}
-  {modal==='ingredient'&&<Modal title={ingForm.id?'Sửa nguyên liệu':'Thêm nguyên liệu'} close={()=>{setModal(null);setIngForm({id:null,name:'',type:'Nguyên liệu',unit:'g',qty:'',minQty:''})}}><form className="form-card plain" onSubmit={saveIngredient}><label>Tên<input required value={ingForm.name} onChange={e=>setIngForm({...ingForm,name:e.target.value})} placeholder="Ví dụ: Matcha / Ly 1L"/></label><label>Loại<select value={ingForm.type} onChange={e=>setIngForm({...ingForm,type:e.target.value})}><option>Nguyên liệu</option><option>Bao bì</option></select></label><label>Đơn vị<select value={ingForm.unit} onChange={e=>setIngForm({...ingForm,unit:e.target.value})}><option>g</option><option>kg</option><option>ml</option><option>lít</option><option>cái</option><option>gói</option><option>hộp</option><option>chai</option></select></label><div className="form-grid-2"><label>Tồn hiện tại<input type="number" step="0.01" value={ingForm.qty} onChange={e=>setIngForm({...ingForm,qty:e.target.value})}/></label><label>Cảnh báo dưới<input type="number" step="0.01" value={ingForm.minQty} onChange={e=>setIngForm({...ingForm,minQty:e.target.value})}/></label></div><button className="primary full">Lưu</button></form></Modal>}
+  {modal==='ingredient'&&<Modal title={ingForm.id?'Sửa nguyên liệu':'Thêm nguyên liệu'} close={()=>{setModal(null);setIngForm({id:null,name:'',type:'Nguyên liệu',unit:'g',qty:'',minQty:''})}}><form className="form-card plain" onSubmit={saveIngredient}><label>Tên<input required value={ingForm.name} onChange={e=>setIngForm({...ingForm,name:e.target.value})} placeholder="Ví dụ: Matcha / Ly 1L"/></label><label>Loại<select value={ingForm.type} onChange={e=>setIngForm({...ingForm,type:e.target.value})}><option>Nguyên liệu</option><option>Bao bì</option></select></label><label>Đơn vị<select value={ingForm.unit} onChange={e=>setIngForm({...ingForm,unit:e.target.value})}><option>g</option><option>kg</option><option>ml</option><option>lít</option><option>cái</option><option>gói</option><option>hộp</option><option>chai</option></select></label><div className="form-grid-2"><label>Tồn hiện tại<input type="number" step="0.01" value={ingForm.qty} onChange={e=>setIngForm({...ingForm,qty:e.target.value})}/></label><label>Cảnh báo dưới<input type="number" step="0.01" value={ingForm.minQty} onChange={e=>setIngForm({...ingForm,minQty:e.target.value})}/></label></div><button className="primary full">Lưu</button>{ingForm.id&&<button type="button" className="danger full ingredient-delete-btn" onClick={deleteIngredient}>Xóa nguyên liệu</button>}</form></Modal>}
   {modal==='receipt'&&<Modal title="Phiếu nhập hàng" close={()=>setModal(null)}><form className="form-card plain" onSubmit={saveReceipt}><label>Ngày nhập<input type="date" value={receipt.date} onChange={e=>setReceipt({...receipt,date:e.target.value})}/></label><label>Nguyên liệu / bao bì<select required value={receipt.ingredientId} onChange={e=>setReceipt({...receipt,ingredientId:e.target.value})}><option value="">Chọn từ danh mục kho</option>{ingredients.map(x=><option key={x.id} value={x.id}>{x.name} · {x.unit}</option>)}</select></label><label>Số lượng<input required type="number" step="0.01" value={receipt.qty} onChange={e=>setReceipt({...receipt,qty:e.target.value})}/></label><label>Tổng tiền<input type="number" value={receipt.total} onChange={e=>setReceipt({...receipt,total:e.target.value})}/></label><label>Thanh toán<select value={receipt.payment} onChange={e=>setReceipt({...receipt,payment:e.target.value})}><option>Tiền mặt</option><option>Chuyển khoản</option></select></label><button className="primary full">Lưu phiếu nhập</button></form></Modal>}
   {modal==='count'&&<Modal title="Kiểm kê kho" close={()=>setModal(null)}><form className="form-card plain" onSubmit={saveCount}><label>Nguyên liệu / bao bì<select required value={count.ingredientId} onChange={e=>setCount({...count,ingredientId:e.target.value})}><option value="">Chọn từ danh mục kho</option>{ingredients.map(x=><option key={x.id} value={x.id}>{x.name} · hệ thống {x.qty} {x.unit}</option>)}</select></label><label>Tồn thực tế<input required type="number" step="0.01" value={count.actual} onChange={e=>setCount({...count,actual:e.target.value})}/></label><label>Ghi chú<textarea value={count.note} onChange={e=>setCount({...count,note:e.target.value})}/></label><button className="primary full">Xác nhận kiểm kê</button></form></Modal>}
   {modal==='adjust'&&<Modal title="Điều chỉnh kho" close={()=>setModal(null)}><form className="form-card plain" onSubmit={saveAdjust}><label>Nguyên liệu / bao bì<select required value={adjust.ingredientId} onChange={e=>setAdjust({...adjust,ingredientId:e.target.value})}><option value="">Chọn từ danh mục kho</option>{ingredients.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label><label>Số lượng<input required type="number" step="0.01" value={adjust.qty} onChange={e=>setAdjust({...adjust,qty:e.target.value})} placeholder="Ví dụ -2 nếu hao hụt"/></label><label>Lý do<select value={adjust.reason} onChange={e=>setAdjust({...adjust,reason:e.target.value})}><option>Hư hao</option><option>Pha thử</option><option>Đổ / làm sai</option><option>Nhập thiếu trước đó</option><option>Khác</option></select></label><label>Ghi chú<textarea value={adjust.note} onChange={e=>setAdjust({...adjust,note:e.target.value})}/></label><button className="primary full">Lưu điều chỉnh</button></form></Modal>}
@@ -693,12 +763,15 @@ function Cash({orders,receipts,transactions,setTransactions,categories,setCatego
   </section>
 }
 
-function Reports({orders,products,receipts=[],transactions=[]}){
+function Reports({orders,products,receipts=[],transactions=[],openOrder}){
   const today=todayISO();
   const [viewMode,setViewMode]=useState('month');
   const [month,setMonth]=useState(today.slice(0,7));
   const [day,setDay]=useState(today);
   const [tab,setTab]=useState('overview');
+  const [selectedRevenueDay,setSelectedRevenueDay]=useState(null);
+
+  useEffect(()=>{setSelectedRevenueDay(null)},[month]);
 
   const dateMatch=(date)=>{
     const d=String(date||'');
@@ -833,11 +906,12 @@ function Reports({orders,products,receipts=[],transactions=[]}){
           <div><div className="section-title">Doanh thu từng ngày</div><p>So sánh doanh thu trong tháng {month.split('-')[1]}/{month.split('-')[0]}</p></div>
           <strong>{fmt(monthOrders.reduce((s,o)=>s+Number(o.total||0),0))}</strong>
         </div>
+        {selectedRevenueDay&&<div className="chart-selected-value"><span>Ngày {Number(selectedRevenueDay.day)}/{Number(month.split('-')[1])}</span><strong>{fmt(selectedRevenueDay.value)}</strong></div>}
         <div className="bar-chart daily-chart">
-          {dailyRows.map(x=><div className="bar-col" key={x.day} title={`Ngày ${x.day}: ${fmt(x.value)}`}>
+          {dailyRows.map(x=><button type="button" className={'bar-col '+(selectedRevenueDay?.day===x.day?'selected':'')} key={x.day} title={`Ngày ${x.day}: ${fmt(x.value)}`} onClick={()=>setSelectedRevenueDay(x)}>
             <div className="bar-wrap"><div className="bar-value" style={{height:`${Math.max(x.value?6:0,(x.value/maxDaily)*100)}%`}}></div></div>
             <small>{Number(x.day)}</small>
-          </div>)}
+          </button>)}
         </div>
         <div className="mobile-daily-summary">
           {dailyRows.filter(x=>x.value>0).sort((a,b)=>b.value-a.value).slice(0,5).map(x=>
@@ -917,6 +991,16 @@ function Reports({orders,products,receipts=[],transactions=[]}){
         <div className="summary-line total-report"><span>Chênh lệch dòng tiền</span><strong>{cashNet<0?'-':''}{fmt(Math.abs(cashNet))}</strong></div>
       </div>
     </>}
+
+    {viewMode==='day'&&<div className="card report-day-orders">
+      <div className="report-day-orders-head"><div><div className="section-title">Danh sách đơn ngày {day.split('-').reverse().join('/')}</div><p>{validOrders.length} đơn · {fmt(revenue)}</p></div></div>
+      <div className="orders-list compact-orders-list">
+        {validOrders.length
+          ? validOrders.slice().sort((a,b)=>String(b.time||'').localeCompare(String(a.time||''))).map(o=><button className="order-row" key={o.id} onClick={()=>openOrder&&openOrder(o)}><div><strong>{o.source}</strong><small>{o.time} · {o.totalQty} ly / sản phẩm</small><span className={'status '+(o.status==='Đã hủy'?'cancel':'')}>{o.status}</span></div><div className="order-money"><strong>{fmt(o.total)}</strong><small>{o.payment}</small><span>›</span></div></button>)
+          : <div className="empty">Ngày này chưa có đơn.</div>}
+      </div>
+    </div>}
+
   </section>
 }
 
