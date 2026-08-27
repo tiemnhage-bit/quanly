@@ -5,7 +5,13 @@ import { initialProducts } from '@/lib/mockData';
 import { supabase, supabaseReady } from '@/lib/supabase';
 
 const fmt = (n) => new Intl.NumberFormat('vi-VN').format(Number(n || 0)) + 'đ';
-const todayISO = () => new Date().toISOString().slice(0, 10);
+const VIETNAM_TZ = 'Asia/Ho_Chi_Minh';
+const todayISO = (date = new Date()) => new Intl.DateTimeFormat('en-CA', {
+  timeZone: VIETNAM_TZ, year: 'numeric', month: '2-digit', day: '2-digit'
+}).format(date);
+const vietnamTime = (date = new Date()) => new Intl.DateTimeFormat('vi-VN', {
+  timeZone: VIETNAM_TZ, hour: '2-digit', minute: '2-digit', hour12: false
+}).format(date);
 
 const INVENTORY_IMPORT_VERSION = '2026-08-24-full-v1';
 const IMPORTED_INGREDIENTS = [{"id":"nl-ca-phe-hat","name":"Cà Phê Hạt","type":"Nguyên liệu","unit":"g","qty":20000.0,"minQty":100.0,"lastPrice":0.0,"note":"Ví dụ"},{"id":"nl-sua-ac","name":"Sữa Đặc","type":"Nguyên liệu","unit":"ml","qty":6000.0,"minQty":2000.0,"lastPrice":0.0,"note":"Ví dụ"},{"id":"nl-sua-tuoi-vinamil","name":"Sữa Tươi Vinamil","type":"Nguyên liệu","unit":"ml","qty":0.0,"minQty":20.0,"lastPrice":0.0,"note":"Ví dụ"},{"id":"nl-phindi-hanh-nhan","name":"Phindi Hạnh Nhân","type":"Nguyên liệu","unit":"ml","qty":0.0,"minQty":20.0,"lastPrice":0.0,"note":"Ví dụ"},{"id":"bb-ly-ca-phe","name":"Ly Cà Phê","type":"Bao bì","unit":"cái","qty":1000.0,"minQty":200.0,"lastPrice":0.0,"note":""},{"id":"nl-rich-lun","name":"Rích Lùn","type":"Nguyên liệu","unit":"ml","qty":2700.0,"minQty":450.0,"lastPrice":0.0,"note":""},{"id":"bb-ly-lun-500ml","name":"Ly Lùn 500ml","type":"Bao bì","unit":"cái","qty":1000.0,"minQty":200.0,"lastPrice":0.0,"note":""},{"id":"nl-tra-lai","name":"Trà Lài","type":"Nguyên liệu","unit":"g","qty":1000.0,"minQty":200.0,"lastPrice":0.0,"note":""},{"id":"nl-tra-nhan-vang-cozy","name":"Trà Nhãn Vàng Cozy","type":"Nguyên liệu","unit":"gói","qty":100.0,"minQty":20.0,"lastPrice":0.0,"note":""},{"id":"bb-ly-700ml","name":"Ly 700ml","type":"Bao bì","unit":"cái","qty":1000.0,"minQty":200.0,"lastPrice":0.0,"note":""},{"id":"bb-ly-1-lit","name":"Ly 1 Lít","type":"Bao bì","unit":"cái","qty":1000.0,"minQty":200.0,"lastPrice":0.0,"note":""},{"id":"nl-tran-chau-trang","name":"Trân Châu Trắng","type":"Nguyên liệu","unit":"g","qty":1000.0,"minQty":200.0,"lastPrice":0.0,"note":""},{"id":"nl-tran-chau-en","name":"Trân Châu Đen","type":"Nguyên liệu","unit":"g","qty":1000.0,"minQty":200.0,"lastPrice":0.0,"note":""},{"id":"nl-bot-matcha","name":"Bột Matcha","type":"Nguyên liệu","unit":"g","qty":1000.0,"minQty":200.0,"lastPrice":0.0,"note":""},{"id":"nl-sua-oatside","name":"Sữa Oatside","type":"Nguyên liệu","unit":"ml","qty":1000.0,"minQty":200.0,"lastPrice":0.0,"note":""},{"id":"nl-syrup-davinci-hanh-nhan","name":"Syrup Davinci Hạnh Nhân","type":"Nguyên liệu","unit":"ml","qty":750.0,"minQty":200.0,"lastPrice":0.0,"note":""},{"id":"nl-syrup-uong-en-han-quoc-cruzie","name":"Syrup Đường Đen Hàn Quốc Cruzie","type":"Nguyên liệu","unit":"ml","qty":2000.0,"minQty":200.0,"lastPrice":0.0,"note":""},{"id":"nl-bot-ca-cao","name":"Bột Ca Cao","type":"Nguyên liệu","unit":"g","qty":1000.0,"minQty":200.0,"lastPrice":0.0,"note":""},{"id":"nl-hong-tra-cozy","name":"Hồng Trà Cozy","type":"Nguyên liệu","unit":"gói","qty":0,"minQty":0,"lastPrice":0,"note":"Tự bổ sung vì có trong công thức món nhưng thiếu ở tab Nguyên liệu"}];
@@ -80,8 +86,26 @@ export default function NhaGeApp() {
   const [expenseCategories,setExpenseCategories] = useState(defaultExpenseCategories);
   const [openingBalances,setOpeningBalances] = useState({cash:0,bank:0});
   const [dayClosings,setDayClosings] = useState([]);
+  const [currentDate,setCurrentDate] = useState(todayISO());
 
 
+
+
+  // Tự chuyển sang ngày mới theo giờ Việt Nam, kể cả khi app được mở xuyên đêm.
+  useEffect(() => {
+    const refreshDate = () => setCurrentDate(todayISO());
+    refreshDate();
+    const timer = setInterval(refreshDate, 30000);
+    const onVisible = () => { if (document.visibilityState === 'visible') refreshDate(); };
+    const onFocus = () => refreshDate();
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onFocus);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, []);
 
   useEffect(() => {
     if (!supabaseReady || !supabase) { setAuthLoading(false); return; }
@@ -152,11 +176,8 @@ export default function NhaGeApp() {
     const timer = setTimeout(async () => {
       const payload = {
         products,
-        orders,
-        ingredients,
         stock_receipts:stockReceipts,
         stock_counts:stockCounts,
-        stock_adjustments:stockAdjustments,
         cash_transactions:cashTransactions,
         expense_categories:expenseCategories,
         opening_balances:openingBalances,
@@ -178,9 +199,9 @@ export default function NhaGeApp() {
       else { setSyncState('saved'); setSyncError(''); }
     }, 500);
     return () => clearTimeout(timer);
-  }, [products, orders, ingredients, stockReceipts, stockCounts, stockAdjustments, cashTransactions, expenseCategories, openingBalances, dayClosings, role, user?.id, dataOwnerId, dataReady]);
+  }, [products, stockReceipts, stockCounts, cashTransactions, expenseCategories, openingBalances, dayClosings, role, user?.id, dataOwnerId, dataReady]);
 
-  const dayOrders = useMemo(() => orders.filter(o => o.date === todayISO() && o.status !== 'Đã hủy'), [orders]);
+  const dayOrders = useMemo(() => orders.filter(o => o.date === currentDate && o.status !== 'Đã hủy'), [orders, currentDate]);
   const todayRevenue = dayOrders.reduce((s, o) => s + Number(o.total || 0), 0);
   const todayQty = dayOrders.reduce((s, o) => s + Number(o.totalQty || 0), 0);
   const cashToday = dayOrders.filter(o => o.payment === 'Tiền mặt').reduce((s,o)=>s+Number(o.total||0),0);
@@ -201,7 +222,7 @@ export default function NhaGeApp() {
   function changeFoodQty(id, delta) {
     setFoodCart(prev => prev.map(x => x.id === id ? { ...x, qty: Math.max(0, x.qty + delta) } : x).filter(x => x.qty > 0));
   }
-  function applyStockChange(items, direction, refId, reason='Bán hàng') {
+  function buildStockMovements(items, direction) {
     const movements = [];
     (items || []).forEach(item => {
       const product = products.find(p => p.id === item.productId);
@@ -211,64 +232,163 @@ export default function NhaGeApp() {
         movements.push({ ingredientId:r.ingredientId, qty, productId:item.productId, productName:item.name });
       });
     });
-    if (!movements.length) return [];
-    setIngredients(prev => prev.map(ing => {
-      const change = movements.filter(m=>m.ingredientId===ing.id).reduce((s,m)=>s+m.qty,0);
-      return change ? {...ing, qty:Number(ing.qty||0)+change} : ing;
-    }));
-    const now = Date.now();
-    setStockAdjustments(prev => [
-      ...movements.map((m,i)=>({id:`TK-${now}-${i}`, date:todayISO(), ingredientId:m.ingredientId, qty:m.qty, reason, refId, note:m.productName||''})),
-      ...prev
-    ]);
     return movements;
   }
 
-  function completeOrder() {
+  function makeStockAdjustments(movements, refId, reason, date = todayISO()) {
+    const now = Date.now();
+    return (movements || []).map((m,i)=>({
+      id:`TK-${now}-${i}`,
+      date,
+      ingredientId:m.ingredientId,
+      qty:Number(m.qty||0),
+      reason,
+      refId,
+      note:m.productName||''
+    }));
+  }
+
+  async function saveOrderAtomic(order, action='append', deltas=[], adjustments=[]) {
+    if (!supabase || !dataOwnerId) return {ok:false};
+    setSyncState('saving');
+    const {data,error} = await supabase.rpc('save_order_atomic', {
+      p_owner_id:dataOwnerId,
+      p_order:order,
+      p_action:action,
+      p_deltas:deltas,
+      p_adjustments:adjustments
+    });
+    if (error) {
+      setSyncState('error');
+      setSyncError(error.message);
+      alert('Không lưu được đơn: ' + error.message);
+      return {ok:false,error};
+    }
+    if (data) {
+      setOrders(Array.isArray(data.orders) ? data.orders : []);
+      setIngredients(Array.isArray(data.ingredients) ? data.ingredients : []);
+      setStockAdjustments(Array.isArray(data.stock_adjustments) ? data.stock_adjustments : []);
+    }
+    setSyncState('saved');
+    setSyncError('');
+    return {ok:true,data};
+  }
+
+  async function refreshSharedOrders() {
+    if (!supabase || !dataOwnerId) return;
+    const {data,error} = await supabase
+      .from('app_states')
+      .select('orders,ingredients,stock_adjustments')
+      .eq('user_id',dataOwnerId)
+      .maybeSingle();
+    if (!error && data) {
+      setOrders(Array.isArray(data.orders) ? data.orders : []);
+      setIngredients(Array.isArray(data.ingredients) ? data.ingredients : []);
+      setStockAdjustments(Array.isArray(data.stock_adjustments) ? data.stock_adjustments : []);
+      setSyncState('saved');
+      setSyncError('');
+    }
+  }
+
+  // Nhận đơn mới từ thiết bị khác và tự tải lại khi quay lại tab.
+  useEffect(() => {
+    if (!supabase || !dataReady || !dataOwnerId) return;
+    refreshSharedOrders();
+    const channel = supabase
+      .channel(`app-state-${dataOwnerId}`)
+      .on('postgres_changes', {
+        event:'UPDATE',
+        schema:'public',
+        table:'app_states',
+        filter:`user_id=eq.${dataOwnerId}`
+      }, () => refreshSharedOrders())
+      .subscribe();
+
+    const onFocus = () => refreshSharedOrders();
+    const onVisible = () => { if (document.visibilityState === 'visible') refreshSharedOrders(); };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisible);
+      supabase.removeChannel(channel);
+    };
+  }, [dataOwnerId, dataReady]);
+
+
+  async function completeOrder() {
     if (!cart.length) return alert('Chưa có món trong đơn.');
     const subtotal = cart.reduce((s, x) => s + x.price * x.qty, 0);
     const discountValue = Math.max(0, Math.min(Number(discount || 0), subtotal));
-    const total = subtotal - discountValue; const totalQty = cart.reduce((s, x) => s + x.qty, 0); const now = new Date();
+    const total = subtotal - discountValue;
+    const totalQty = cart.reduce((s, x) => s + x.qty, 0);
+    const now = new Date();
     const items = cart.map(x=>({productId:x.id,name:x.name,qty:x.qty,price:x.price,cost:x.cost||0}));
     const id = `DH-${Date.now()}`;
-    const stockMovements = applyStockChange(items, -1, id, 'Bán hàng');
-    const order = { id, date:todayISO(), time:now.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'}), source:'Tại quán', payment, status:'Hoàn tất', items, stockMovements, totalQty, subtotal, discount:discountValue, total, note:'' };
-    setOrders(prev => [order, ...prev]); setCart([]); setDiscount(''); setOrderTab('list');
+    const stockMovements = buildStockMovements(items, -1);
+    const orderDate = todayISO(now);
+    const order = {
+      id, date:orderDate, time:vietnamTime(now), source:'Tại quán', payment, status:'Hoàn tất',
+      items, stockMovements, totalQty, subtotal, discount:discountValue, total, note:''
+    };
+    const adjustments = makeStockAdjustments(stockMovements,id,'Bán hàng',orderDate);
+    const result = await saveOrderAtomic(order,'append',stockMovements,adjustments);
+    if (!result.ok) return;
+    setCart([]); setDiscount(''); setOrderTab('list');
   }
-  function saveFoodOrder(e) {
+
+  async function saveFoodOrder(e) {
     e.preventDefault();
     if (!foodCart.length) return alert('Vui lòng chọn ít nhất 1 món đã bán trên App Food.');
     if (!foodForm.total) return alert('Vui lòng nhập doanh thu thực nhận.');
     const items = foodCart.map(x=>({productId:x.id,name:x.name,qty:x.qty,price:x.price,cost:x.cost||0}));
     const totalQty = items.reduce((s,x)=>s+Number(x.qty||0),0);
     const id = `APP-${Date.now()}`;
-    const stockMovements = applyStockChange(items, -1, id, 'Bán hàng App Food');
+    const stockMovements = buildStockMovements(items, -1);
     const order = {
       id, date:foodForm.date,
-      time:new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'}),
+      time:vietnamTime(new Date()),
       source:foodForm.app, payment:'App Food', status:'Hoàn tất',
       items, stockMovements, totalQty,
       subtotal:Number(foodForm.total), discount:0, total:Number(foodForm.total),
       note:foodForm.note||'Nhập tổng cuối ngày'
     };
-    setOrders(prev => [order, ...prev]);
+    const adjustments = makeStockAdjustments(stockMovements,id,'Bán hàng App Food',foodForm.date);
+    const result = await saveOrderAtomic(order,'append',stockMovements,adjustments);
+    if (!result.ok) return;
     setFoodForm({ date:todayISO(), app:'Grab Food', total:'', note:'' });
     setFoodCart([]);
     setScreen('order'); setOrderTab('list');
   }
-  function cancelOrder(id) {
+
+  async function cancelOrder(id) {
     const order = orders.find(o=>o.id===id);
-    if (order && order.status !== 'Đã hủy' && Array.isArray(order.stockMovements) && order.stockMovements.length) {
-      setIngredients(prev => prev.map(ing => {
-        const restore = order.stockMovements.filter(m=>m.ingredientId===ing.id).reduce((s,m)=>s-Math.min(Number(m.qty||0),0),0);
-        return restore ? {...ing, qty:Number(ing.qty||0)+restore} : ing;
-      }));
-      const now=Date.now();
-      setStockAdjustments(prev => [...order.stockMovements.map((m,i)=>({id:`HK-${now}-${i}`,date:todayISO(),ingredientId:m.ingredientId,qty:-Number(m.qty||0),reason:'Hoàn kho do hủy đơn',refId:id,note:''})),...prev]);
-    }
-    setOrders(prev => prev.map(o => o.id === id ? { ...o, status:'Đã hủy' } : o)); setSelectedOrder(null);
+    if (!order || order.status==='Đã hủy') return;
+    const restored = (order.stockMovements||[]).map(m=>({
+      ...m,
+      qty:-Number(m.qty||0)
+    }));
+    const now=Date.now();
+    const adjustments = restored.map((m,i)=>({
+      id:`HK-${now}-${i}`,
+      date:todayISO(),
+      ingredientId:m.ingredientId,
+      qty:Number(m.qty||0),
+      reason:'Hoàn kho do hủy đơn',
+      refId:id,
+      note:m.productName||''
+    }));
+    const updated = {...order,status:'Đã hủy'};
+    const result = await saveOrderAtomic(updated,'replace',restored,adjustments);
+    if (result.ok) setSelectedOrder(null);
   }
-  function saveOrderEdit(updated) { setOrders(prev => prev.map(o => o.id === updated.id ? updated : o)); setSelectedOrder(null); }
+
+  async function saveOrderEdit(updated) {
+    const result = await saveOrderAtomic(updated,'replace',[],[]);
+    if (result.ok) setSelectedOrder(null);
+  }
+
   async function signOut(){ if (supabase) await supabase.auth.signOut(); }
 
   if (authLoading) return <LoadingScreen text="Đang kiểm tra tài khoản…" />;
@@ -278,7 +398,7 @@ export default function NhaGeApp() {
   if (syncState === 'error' && !dataReady) return <SyncErrorScreen message={syncError} />;
 
   return <div className="app-shell">
-    <header className="topbar"><div><div className="brand">TIỆM NHÀ GÉ</div><div className="date">Quản lý quán · Bản 0.17 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn settings-btn" aria-label="Cài đặt" title="Cài đặt" onClick={() => setScreen('more')}>⚙</button></header>
+    <header className="topbar"><div><div className="brand">TIỆM NHÀ GÉ</div><div className="date">Quản lý quán · Bản 0.18 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn settings-btn" aria-label="Cài đặt" title="Cài đặt" onClick={() => setScreen('more')}>⚙</button></header>
     <main>
       <div className="page-transition" key={screen}>
       {role==='admin' && screen === 'home' && <Home todayRevenue={todayRevenue} dayOrders={dayOrders} todayQty={todayQty} cashToday={cashToday} bankToday={bankToday} knownCostToday={knownCostToday} ingredients={ingredients} closings={dayClosings} go={setScreen} openOrders={() => {setScreen('order');setOrderTab('list')}} />}
@@ -321,7 +441,7 @@ function AuthScreen(){
   return <div className="auth-shell"><div className="auth-card"><div className="auth-logo">GÉ</div><h1>Quản lý quán</h1><p>Đăng nhập để dùng chung dữ liệu trên điện thoại và máy tính.</p><form className="auth-form" onSubmit={submit}><label>Tên đăng nhập<input required value={username} onChange={e=>setUsername(e.target.value)} autoCapitalize="none" /></label><label>Mật khẩu<div className="password-field"><input type={showPassword?'text':'password'} required value={password} onChange={e=>setPassword(e.target.value)} /><button type="button" className="password-eye" onClick={()=>setShowPassword(v=>!v)} aria-label={showPassword?'Ẩn mật khẩu':'Xem mật khẩu'}>{showPassword?'◉':'◌'}</button></div></label>{message&&<div className="auth-message">{message}</div>}<button className="primary full" disabled={busy}>{busy?'Đang đăng nhập…':'Đăng nhập'}</button></form><p className="hint">Tài khoản chủ quán ban đầu: <b>Admin</b>. Sau khi kết nối dữ liệu, nên đổi mật khẩu mặc định.</p></div></div>
 }
 function LoadingScreen({text}){ return <div className="auth-shell"><div className="auth-card center"><div className="spinner"></div><strong>{text}</strong></div></div> }
-function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.17 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
+function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.18 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
 function SyncErrorScreen({message}){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa tải được dữ liệu</h1><p>Hãy kiểm tra đã chạy file <b>supabase.sql</b> trong Supabase chưa.</p><div className="auth-message">{message}</div></div></div> }
 
 function Nav({active,icon,label,onClick}) { return <button className={'nav-item '+(active?'active':'')} onClick={onClick}><span>{icon}</span><small>{label}</small></button> }

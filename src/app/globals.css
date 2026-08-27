@@ -836,3 +836,6 @@ button:active{
 
 /* Xóa nguyên liệu */
 .ingredient-delete-btn{margin-top:2px}
+
+/* 0.18 - Đồng bộ đa thiết bị */
+.sync.error{color:#b42318}
