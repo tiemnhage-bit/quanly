@@ -404,7 +404,7 @@ export default function NhaGeApp() {
   if (syncState === 'error' && !dataReady) return <SyncErrorScreen message={syncError} />;
 
   return <div className="app-shell">
-    <header className="topbar"><div><div className="brand">{shop?.name||'QUẢN LÝ QUÁN'}</div><div className="date">Free Beta · Bản 0.21 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn settings-btn" aria-label="Cài đặt" title="Cài đặt" onClick={() => setScreen('more')}>⚙</button></header>
+    <header className="topbar"><div><div className="brand">{shop?.name||'QUẢN LÝ QUÁN'}</div><div className="date">Free Beta · Bản 0.22 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn settings-btn" aria-label="Cài đặt" title="Cài đặt" onClick={() => setScreen('more')}>⚙</button></header>
     <main>
       <div className="page-transition" key={screen}>
       {role==='admin' && screen === 'home' && <Home todayRevenue={todayRevenue} dayOrders={dayOrders} todayQty={todayQty} cashToday={cashToday} bankToday={bankToday} knownCostToday={knownCostToday} ingredients={ingredients} closings={dayClosings} go={setScreen} openOrders={() => {setScreen('order');setOrderTab('list')}} />}
@@ -630,8 +630,75 @@ function AuthScreen(){
     </form>}
   </div></div>
 }
+
+const STARTER_MENUS = {
+  empty: {label:'Quán trống',icon:'＋',desc:'Tự thêm menu của bạn sau.',products:[]},
+  cafe: {
+    label:'Cà phê & nước',icon:'☕',desc:'Khung menu gần với Tiệm Nhà Gé: cà phê, trà, matcha, cacao.',
+    products:[
+      ['Cà phê','Cà phê đen',15000],['Cà phê','Cà phê sữa',18000],['Cà phê','Cà phê muối',25000],
+      ['Cà phê','Bạc xỉu',27000],['Cà phê','Cà phê kem dẻo',30000],['Cà phê','Sữa tươi cà phê',25000],
+      ['Trà trái cây','Trà chanh',22000],['Trà trái cây','Trà tắc',22000],['Trà trái cây','Hồng trà',27000],
+      ['Trà trái cây','Trà ổi',27000],['Trà trái cây','Trà mãng cầu chanh dây',30000],['Trà trái cây','Trà trái cây tươi 1L',39000],
+      ['Matcha','Matcha Latte',28000],['Matcha','Matcha Oatside',28000],['Matcha','Matcha Kem Muối',32000],
+      ['Matcha','Matcha Hạnh Nhân',30000],['Matcha','Matcha Cold Whisk',32000],['Matcha','Matcha Latte Yakult',32000],
+      ['Ca cao','Ca cao sữa',28000],['Ca cao','Ca cao kem muối',32000],
+      ['Trà sữa','Trà sữa truyền thống',30000],['Trà sữa','Sữa tươi trân châu đường đen',32000],
+      ['Nước ép','Nước ép dưa hấu',32000],['Nước ép','Nước ép thơm',35000],
+      ['Ăn vặt','Tô trái cây',25000],['Ăn vặt','Bánh tráng',20000]
+    ]
+  },
+  fruit: {
+    label:'Trái cây cắt sẵn',icon:'🍉',desc:'Trái cây phần, tô mix, combo và nước ép cơ bản.',
+    products:[
+      ['Trái cây phần','Dưa hấu cắt sẵn',25000],['Trái cây phần','Thơm cắt sẵn',25000],['Trái cây phần','Ổi cắt sẵn',25000],
+      ['Trái cây phần','Xoài cắt sẵn',30000],['Trái cây phần','Cóc cắt sẵn',25000],['Trái cây phần','Thanh long cắt sẵn',30000],
+      ['Trái cây mix','Tô trái cây mix nhỏ',35000],['Trái cây mix','Tô trái cây mix lớn',50000],
+      ['Trái cây mix','Combo trái cây 2 người',69000],['Trái cây mix','Combo trái cây gia đình',119000],
+      ['Ăn kèm','Muối tôm',5000],['Ăn kèm','Muối ớt',5000],['Ăn kèm','Sốt chấm trái cây',7000],
+      ['Nước ép','Nước ép dưa hấu',30000],['Nước ép','Nước ép thơm',35000],['Nước ép','Nước ép cam',35000],
+      ['Nước ép','Nước ép cà rốt',30000]
+    ]
+  },
+  noodles: {
+    label:'Bún / Phở',icon:'🍜',desc:'Khung món chính, món thêm và nước uống cho quán bún/phở.',
+    products:[
+      ['Phở','Phở bò tái',45000],['Phở','Phở bò chín',45000],['Phở','Phở tái nạm',50000],['Phở','Phở đặc biệt',60000],
+      ['Bún','Bún bò',45000],['Bún','Bún bò đặc biệt',55000],['Bún','Bún thịt nướng',45000],['Bún','Bún chả giò',40000],
+      ['Món thêm','Thêm thịt',20000],['Món thêm','Thêm bò viên',15000],['Món thêm','Thêm chả',10000],
+      ['Món thêm','Thêm bún/phở',10000],['Món thêm','Quẩy',5000],
+      ['Nước uống','Trà đá',3000],['Nước uống','Nước suối',10000],['Nước uống','Nước ngọt',15000]
+    ]
+  },
+  rice: {
+    label:'Quán cơm',icon:'🍚',desc:'Cơm phần phổ biến, món thêm, canh và nước uống.',
+    products:[
+      ['Cơm phần','Cơm sườn',40000],['Cơm phần','Cơm sườn bì',45000],['Cơm phần','Cơm sườn bì chả',50000],
+      ['Cơm phần','Cơm gà chiên',40000],['Cơm phần','Cơm gà xối mỡ',45000],['Cơm phần','Cơm thịt kho trứng',40000],
+      ['Cơm phần','Cơm cá kho',40000],['Cơm phần','Cơm bò xào',50000],['Cơm phần','Cơm phần đặc biệt',55000],
+      ['Món thêm','Thêm cơm',7000],['Món thêm','Thêm trứng ốp la',8000],['Món thêm','Thêm sườn',25000],
+      ['Món thêm','Thêm chả',10000],['Món thêm','Canh thêm',7000],
+      ['Nước uống','Trà đá',3000],['Nước uống','Nước suối',10000],['Nước uống','Nước ngọt',15000]
+    ]
+  }
+};
+
+function starterProducts(key){
+  const rows=STARTER_MENUS[key]?.products||[];
+  return rows.map((row,i)=>({
+    id:`starter-${key}-${i+1}`,
+    category:row[0],
+    name:row[1],
+    price:row[2],
+    cost:0,
+    active:true,
+    recipe:[]
+  }));
+}
+
 function CreateShopScreen({user,onCreated,onSignOut}){
   const [form,setForm]=useState({name:'',phone:'',address:''});
+  const [menuPreset,setMenuPreset]=useState('empty');
   const [busy,setBusy]=useState(false);
   const [message,setMessage]=useState('');
 
@@ -644,28 +711,55 @@ function CreateShopScreen({user,onCreated,onSignOut}){
       p_phone:form.phone.trim()||null,
       p_address:form.address.trim()||null
     });
+    if(error){setBusy(false);setMessage(error.message);return;}
+
+    const shopId=data?.id;
+    const products=starterProducts(menuPreset);
+    if(shopId && products.length){
+      const {error:menuError}=await supabase
+        .from('app_states')
+        .update({products,updated_at:new Date().toISOString()})
+        .eq('shop_id',shopId);
+      if(menuError){
+        setBusy(false);
+        setMessage('Đã tạo quán nhưng chưa nạp được menu mẫu: '+menuError.message);
+        return;
+      }
+    }
     setBusy(false);
-    if(error){setMessage(error.message);return;}
     onCreated(data);
   }
 
-  return <div className="auth-shell"><div className="auth-card create-shop-card">
+  return <div className="auth-shell setup-shell"><div className="auth-card create-shop-card setup-card">
     <div className="auth-logo">Q</div>
     <div className="free-pill">FREE BETA</div>
     <h1>Tạo quán của bạn</h1>
-    <p>Mỗi quán có dữ liệu riêng. Bạn có thể thêm menu, kho và nhân viên sau.</p>
+    <p>Chọn sẵn một bộ menu để vào app là có thể chỉnh sửa và bắt đầu bán ngay.</p>
+
     <form className="auth-form" onSubmit={submit}>
       <label>Tên quán<input required value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Ví dụ: Mây Coffee"/></label>
-      <label>Số điện thoại <span className="optional">không bắt buộc</span><input value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} placeholder="09xx xxx xxx"/></label>
+      <label>Số điện thoại quán <span className="optional">không bắt buộc</span><input inputMode="tel" value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} placeholder="09xx xxx xxx"/></label>
       <label>Địa chỉ <span className="optional">không bắt buộc</span><input value={form.address} onChange={e=>setForm({...form,address:e.target.value})} placeholder="Địa chỉ quán"/></label>
+
+      <div className="starter-menu-block">
+        <div className="starter-title"><strong>Chọn bộ menu khởi đầu</strong><small>Có thể sửa tên, giá hoặc xóa món sau khi tạo quán.</small></div>
+        <div className="starter-grid">
+          {Object.entries(STARTER_MENUS).map(([key,p])=><button type="button" key={key} className={'starter-option '+(menuPreset===key?'selected':'')} onClick={()=>setMenuPreset(key)}>
+            <span className="starter-icon">{p.icon}</span>
+            <span><strong>{p.label}</strong><small>{p.desc}</small>{p.products.length>0&&<em>{p.products.length} món mẫu</em>}</span>
+            <i>{menuPreset===key?'✓':''}</i>
+          </button>)}
+        </div>
+      </div>
+
       {message&&<div className="auth-message">{message}</div>}
-      <button className="primary full" disabled={busy}>{busy?'Đang tạo quán…':'Bắt đầu sử dụng miễn phí'}</button>
+      <button className="primary full setup-submit" disabled={busy}>{busy?'Đang tạo quán…':'Tạo quán & bắt đầu sử dụng'}</button>
     </form>
     <button className="auth-link-btn" onClick={onSignOut}>Đăng xuất tài khoản này</button>
   </div></div>
 }
 function LoadingScreen({text}){ return <div className="auth-shell"><div className="auth-card center"><div className="spinner"></div><strong>{text}</strong></div></div> }
-function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.21 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
+function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.22 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
 function SyncErrorScreen({message}){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa tải được dữ liệu</h1><p>Hãy kiểm tra đã chạy file <b>supabase.sql</b> trong Supabase chưa.</p><div className="auth-message">{message}</div></div></div> }
 
 function Nav({active,icon,label,onClick}) { return <button className={'nav-item '+(active?'active':'')} onClick={onClick}><span>{icon}</span><small>{label}</small></button> }
