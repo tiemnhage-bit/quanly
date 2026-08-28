@@ -469,7 +469,7 @@ export default function NhaGeApp() {
   if (syncState === 'error' && !dataReady) return <SyncErrorScreen message={syncError} />;
 
   return <div className="app-shell">
-    <header className="topbar"><div><div className="brand">{shop?.name||'QUẢN LÝ QUÁN'}</div><div className="date">Free Beta · Bản 0.25 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn settings-btn admin-settings-wrap" aria-label="Cài đặt" title="Cài đặt" onClick={() => setScreen('more')}>⚙{isSaasAdminUser(user)&&pendingApprovals.length>0&&<span className="admin-pending-badge">{pendingApprovals.length}</span>}</button></header>
+    <header className="topbar"><div><div className="brand">{shop?.name||'QUẢN LÝ QUÁN'}</div><div className="date">Free Beta · Bản 0.25.1 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn settings-btn admin-settings-wrap" aria-label="Cài đặt" title="Cài đặt" onClick={() => setScreen('more')}>⚙{isSaasAdminUser(user)&&pendingApprovals.length>0&&<span className="admin-pending-badge">{pendingApprovals.length}</span>}</button></header>
     <main>
       <div className="page-transition" key={screen}>
       {role==='admin' && screen === 'home' && <Home todayRevenue={todayRevenue} dayOrders={dayOrders} todayQty={todayQty} cashToday={cashToday} bankToday={bankToday} knownCostToday={knownCostToday} ingredients={ingredients} closings={dayClosings} go={setScreen} openOrders={() => {setScreen('order');setOrderTab('list')}} />}
@@ -931,7 +931,7 @@ function CreateShopScreen({user,onCreated,onSignOut}){
   </div></div>
 }
 function LoadingScreen({text}){ return <div className="auth-shell"><div className="auth-card center"><div className="spinner"></div><strong>{text}</strong></div></div> }
-function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.25 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
+function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.25.1 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
 function SyncErrorScreen({message}){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa tải được dữ liệu</h1><p>Hãy kiểm tra đã chạy file <b>supabase.sql</b> trong Supabase chưa.</p><div className="auth-message">{message}</div></div></div> }
 
 function Nav({active,icon,label,onClick}) { return <button className={'nav-item '+(active?'active':'')} onClick={onClick}><span>{icon}</span><small>{label}</small></button> }
@@ -1054,6 +1054,21 @@ function ProductManager({products,setProducts,productCategories,setProductCatego
   useEffect(()=>{
     if(!form.category && categories.length) setForm(v=>({...v,category:categories[0]}));
   },[categories.join('|')]);
+
+  async function downloadMenuTemplate(){
+    try{
+      const XLSX=await import('xlsx');
+      const rows=[
+        {'Tên món':'Cà phê sữa','Danh mục':'Cà phê','Giá bán':25000,'Giá vốn':8000},
+        {'Tên món':'Trà đào','Danh mục':'Trà trái cây','Giá bán':30000,'Giá vốn':10000},
+      ];
+      const ws=XLSX.utils.json_to_sheet(rows);
+      ws['!cols']=[{wch:28},{wch:22},{wch:14},{wch:14}];
+      const wb=XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb,ws,'Menu');
+      XLSX.writeFile(wb,'mau-import-menu.xlsx');
+    }catch(e){alert('Không tạo được file mẫu.');}
+  }
 
   async function importMenuFile(file){
     if(!file)return;
@@ -1286,7 +1301,7 @@ function ProductManager({products,setProducts,productCategories,setProductCatego
     <button className="back" onClick={back}>← Quay lại</button>
     <div className="screen-head product-manager-head">
       <div><h2>Món & giá vốn</h2><p className="hint">Quản lý danh mục, giá bán, giá vốn và cách trừ kho của menu.</p></div>
-      <div className="product-manager-actions"><label className="bulk-edit-entry import-menu-entry"><span>⇧</span><div><strong>Import menu Excel/CSV</strong><small>Tên món · Danh mục · Giá bán · Giá vốn</small></div><input type="file" accept=".xlsx,.xls,.csv" hidden onChange={e=>{importMenuFile(e.target.files?.[0]);e.target.value='';}}/></label>
+      <div className="product-manager-actions"><button className="bulk-edit-entry template-download-entry" type="button" onClick={downloadMenuTemplate}><span>↓</span><div><strong>Tải file mẫu</strong><small>Excel mẫu để nhập menu</small></div></button><label className="bulk-edit-entry import-menu-entry"><span>⇧</span><div><strong>Import menu Excel/CSV</strong><small>Tên món · Danh mục · Giá bán · Giá vốn</small></div><input type="file" accept=".xlsx,.xls,.csv" hidden onChange={e=>{importMenuFile(e.target.files?.[0]);e.target.value='';}}/></label>
         <button className="bulk-edit-entry stock-set-entry" onClick={openStockSet}><span>▦</span><div><strong>Set trừ kho</strong><small>{ingredients.length} nguyên liệu</small></div></button>
         <button className="bulk-edit-entry" onClick={openBulk}><span>✎</span><div><strong>Sửa giá hàng loạt</strong><small>{products.length} sản phẩm</small></div></button>
       </div>
@@ -1419,6 +1434,61 @@ function Stock({audit,ingredients,setIngredients,receipts,setReceipts,counts,set
   const [count,setCount]=useState({date:todayISO(),ingredientId:'',actual:'',note:''});
   const [adjust,setAdjust]=useState({date:todayISO(),ingredientId:'',qty:'',reason:'Hư hao',note:''});
   const ingMap=Object.fromEntries(ingredients.map(x=>[x.id,x]));
+  async function downloadIngredientTemplate(){
+    try{
+      const XLSX=await import('xlsx');
+      const rows=[
+        {'Tên nguyên liệu':'Sữa đặc','Loại':'Nguyên liệu','Đơn vị':'g','Tồn hiện tại':1000,'Cảnh báo dưới':300,'Giá nhập':45},
+        {'Tên nguyên liệu':'Ly 500ml','Loại':'Bao bì','Đơn vị':'cái','Tồn hiện tại':100,'Cảnh báo dưới':30,'Giá nhập':1200},
+      ];
+      const ws=XLSX.utils.json_to_sheet(rows);
+      ws['!cols']=[{wch:28},{wch:16},{wch:14},{wch:16},{wch:18},{wch:16}];
+      const wb=XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb,ws,'Nguyen lieu');
+      XLSX.writeFile(wb,'mau-import-nguyen-lieu.xlsx');
+    }catch(e){alert('Không tạo được file mẫu nguyên liệu.');}
+  }
+  async function importIngredientFile(file){
+    if(!file)return;
+    try{
+      const XLSX=await import('xlsx');
+      const buf=await file.arrayBuffer();
+      const wb=XLSX.read(buf,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+      const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+      const pick=(row,names)=>{const key=Object.keys(row).find(k=>names.some(n=>norm(k).includes(n)));return key?row[key]:'';};
+      const num=v=>Number(String(v??'').replace(/[^0-9.-]/g,''))||0;
+      const allowedUnits=['g','kg','ml','lít','cái','gói','hộp','chai'];
+      const imported=rows.map((r,i)=>{
+        const name=String(pick(r,['ten nguyen lieu','ten','name'])).trim();
+        const rawType=String(pick(r,['loai','type'])||'Nguyên liệu').trim();
+        const type=norm(rawType).includes('bao bi')?'Bao bì':'Nguyên liệu';
+        let unit=String(pick(r,['don vi','unit'])||'g').trim().toLowerCase();
+        if(unit==='lit'||unit==='l')unit='lít';
+        if(!allowedUnits.includes(unit))unit='g';
+        return {
+          id:`NL-IMP-${Date.now()}-${i}`,
+          name,
+          type,
+          unit,
+          qty:num(pick(r,['ton hien tai','so luong','ton kho','qty'])),
+          minQty:num(pick(r,['canh bao duoi','canh bao','ton toi thieu','min'])),
+          purchasePrice:num(pick(r,['gia nhap','purchase price','gia mua']))
+        };
+      }).filter(x=>x.name);
+      if(!imported.length)throw new Error('Không đọc được nguyên liệu. Hãy dùng file mẫu tải từ hệ thống.');
+      const existingNames=new Set(ingredients.map(x=>norm(x.name)));
+      const fresh=imported.filter(x=>!existingNames.has(norm(x.name)));
+      const skipped=imported.length-fresh.length;
+      if(!fresh.length)return alert('Các nguyên liệu trong file đã tồn tại trong kho.');
+      if(!confirm(`Đọc được ${imported.length} dòng. Sẽ thêm ${fresh.length} nguyên liệu${skipped?` và bỏ qua ${skipped} tên đã tồn tại`:''}. Tiếp tục?`))return;
+      setIngredients(prev=>[...prev,...fresh]);
+      audit?.('Import nguyên liệu',`${fresh.length} nguyên liệu`);
+      alert(`Đã import ${fresh.length} nguyên liệu${skipped?`. Bỏ qua ${skipped} tên trùng.`:'.'}`);
+    }catch(e){alert(e.message||'Không đọc được file Excel nguyên liệu.');}
+  }
+
   function saveIngredient(e){e.preventDefault(); if(!ingForm.name.trim())return; const item={...ingForm,id:ingForm.id||`NL-${Date.now()}`,qty:Number(ingForm.qty||0),minQty:Number(ingForm.minQty||0),purchasePrice:Number(ingForm.purchasePrice||0)}; setIngredients(v=>ingForm.id?v.map(x=>x.id===item.id?item:x):[...v,item]);setIngForm({id:null,name:'',type:'Nguyên liệu',unit:'g',qty:'',minQty:'',purchasePrice:''});setModal(null);}
   function deleteIngredient(){
     if(!ingForm.id)return;
@@ -1437,7 +1507,7 @@ function Stock({audit,ingredients,setIngredients,receipts,setReceipts,counts,set
   function saveAdjust(e){e.preventDefault();const ing=ingMap[adjust.ingredientId];const q=Number(adjust.qty||0);if(!ing||!q)return;setIngredients(v=>v.map(x=>x.id===ing.id?{...x,qty:Number(x.qty||0)+q}:x));setAdjustments(v=>[{id:`DC-${Date.now()}`,...adjust,name:ing.name,unit:ing.unit,qty:q},...v]); audit?.('Điều chỉnh kho',`${ing.name} ${q>0?'+':''}${q} ${ing.unit}`);setAdjust({date:todayISO(),ingredientId:'',qty:'',reason:'Hư hao',note:''});setModal(null);}
   const history=[...receipts.map(x=>({...x,kind:'Nhập hàng',name:ingMap[x.ingredientId]?.name||'Nguyên liệu',unit:ingMap[x.ingredientId]?.unit||''})),...counts.map(x=>({...x,kind:'Kiểm kê',qty:x.diff})),...adjustments.map(x=>({...x,kind:x.reason==='Bán hàng'?'Bán hàng':'Điều chỉnh'}))].sort((a,b)=>String(b.id).localeCompare(String(a.id)));
   const inventoryValue=ingredients.reduce((s,x)=>s+Math.max(0,Number(x.qty||0))*Number(x.purchasePrice||0),0);
-  return <section className="screen stock-screen"><div className="screen-head"><div><h2>Kho</h2><p>Một danh mục dùng chung cho nhập hàng, kiểm kê và trừ kho</p></div><button className="primary small" onClick={()=>setModal('ingredient')}>+ Nguyên liệu</button></div><div className="segmented stock-tabs"><button className={tab==='inventory'?'active':''} onClick={()=>setTab('inventory')}>Tồn kho</button><button className={tab==='receipts'?'active':''} onClick={()=>setTab('receipts')}>Nhập hàng</button><button className={tab==='counts'?'active':''} onClick={()=>setTab('counts')}>Kiểm kê</button><button className={tab==='history'?'active':''} onClick={()=>setTab('history')}>Lịch sử</button></div>
+  return <section className="screen stock-screen"><div className="screen-head"><div><h2>Kho</h2><p>Một danh mục dùng chung cho nhập hàng, kiểm kê và trừ kho</p></div><button className="primary small" onClick={()=>setModal('ingredient')}>+ Nguyên liệu</button></div><div className="product-manager-actions stock-import-actions"><button className="bulk-edit-entry template-download-entry" type="button" onClick={downloadIngredientTemplate}><span>↓</span><div><strong>Tải file mẫu</strong><small>Mẫu danh mục nguyên liệu</small></div></button><label className="bulk-edit-entry import-menu-entry"><span>⇧</span><div><strong>Import nguyên liệu</strong><small>Tên · Loại · Đơn vị · Tồn · Giá nhập</small></div><input type="file" accept=".xlsx,.xls,.csv" hidden onChange={e=>{importIngredientFile(e.target.files?.[0]);e.target.value='';}}/></label></div><div className="segmented stock-tabs"><button className={tab==='inventory'?'active':''} onClick={()=>setTab('inventory')}>Tồn kho</button><button className={tab==='receipts'?'active':''} onClick={()=>setTab('receipts')}>Nhập hàng</button><button className={tab==='counts'?'active':''} onClick={()=>setTab('counts')}>Kiểm kê</button><button className={tab==='history'?'active':''} onClick={()=>setTab('history')}>Lịch sử</button></div>
   {tab==='inventory'&&<><div className="card inventory-value-card"><span>TỔNG GIÁ TRỊ TỒN KHO HIỆN TẠI</span><strong>{fmt(inventoryValue)}</strong><small>Tính theo tồn hiện tại × giá nhập bình quân</small></div><div className="quick-actions stock-actions"><button onClick={()=>setModal('receipt')}>+ Nhập hàng</button><button onClick={()=>setModal('count')}>Kiểm kê</button><button onClick={()=>setModal('adjust')}>Điều chỉnh</button></div><div className="card stock-list">{ingredients.length?ingredients.map(x=><div className="stock-row" key={x.id} onClick={()=>editIngredient(x)}><div><strong>{x.name}</strong><small>{x.type} · {x.unit}{Number(x.purchasePrice)>0?` · Giá nhập TB ${fmt(x.purchasePrice)}/${x.unit}`:''}{Number(x.minQty)>0&&Number(x.qty)<=Number(x.minQty)?' · ⚠ Sắp hết':''}</small></div><span>{x.qty} {x.unit}<small>Chạm để sửa</small></span></div>):<div className="empty">Chưa có nguyên liệu hoặc bao bì. Bấm “+ Nguyên liệu” để tạo.</div>}</div></>}
   {tab==='receipts'&&<><button className="primary full" onClick={()=>setModal('receipt')}>+ Tạo phiếu nhập hàng</button><div className="card stock-list">{receipts.length?receipts.map(r=><div className="stock-row" key={r.id}><div><strong>{ingMap[r.ingredientId]?.name||'Nguyên liệu'}</strong><small>{r.date} · {r.payment}</small></div><span>+{r.qty} {ingMap[r.ingredientId]?.unit||''}<small>{r.total?fmt(r.total):''}</small></span></div>):<div className="empty">Chưa có phiếu nhập.</div>}</div></>}
   {tab==='counts'&&<><button className="primary full" onClick={()=>setModal('count')}>+ Kiểm kê kho</button><div className="card stock-list">{counts.length?counts.map(c=><div className="stock-row" key={c.id}><div><strong>{c.name}</strong><small>{c.date} · Hệ thống {c.before} {c.unit}</small></div><span>{c.actual} {c.unit}<small>Lệch {c.diff>0?'+':''}{c.diff}</small></span></div>):<div className="empty">Chưa có lần kiểm kê.</div>}</div></>}
