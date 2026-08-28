@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { initialProducts } from '@/lib/mockData';
 import { supabase, supabaseReady } from '@/lib/supabase';
 
 const fmt = (n) => new Intl.NumberFormat('vi-VN').format(Number(n || 0)) + 'đ';
@@ -13,55 +12,12 @@ const vietnamTime = (date = new Date()) => new Intl.DateTimeFormat('vi-VN', {
   timeZone: VIETNAM_TZ, hour: '2-digit', minute: '2-digit', hour12: false
 }).format(date);
 
-const INVENTORY_IMPORT_VERSION = '2026-08-24-full-v1';
-const IMPORTED_INGREDIENTS = [{"id":"nl-ca-phe-hat","name":"Cà Phê Hạt","type":"Nguyên liệu","unit":"g","qty":20000.0,"minQty":100.0,"lastPrice":0.0,"note":"Ví dụ"},{"id":"nl-sua-ac","name":"Sữa Đặc","type":"Nguyên liệu","unit":"ml","qty":6000.0,"minQty":2000.0,"lastPrice":0.0,"note":"Ví dụ"},{"id":"nl-sua-tuoi-vinamil","name":"Sữa Tươi Vinamil","type":"Nguyên liệu","unit":"ml","qty":0.0,"minQty":20.0,"lastPrice":0.0,"note":"Ví dụ"},{"id":"nl-phindi-hanh-nhan","name":"Phindi Hạnh Nhân","type":"Nguyên liệu","unit":"ml","qty":0.0,"minQty":20.0,"lastPrice":0.0,"note":"Ví dụ"},{"id":"bb-ly-ca-phe","name":"Ly Cà Phê","type":"Bao bì","unit":"cái","qty":1000.0,"minQty":200.0,"lastPrice":0.0,"note":""},{"id":"nl-rich-lun","name":"Rích Lùn","type":"Nguyên liệu","unit":"ml","qty":2700.0,"minQty":450.0,"lastPrice":0.0,"note":""},{"id":"bb-ly-lun-500ml","name":"Ly Lùn 500ml","type":"Bao bì","unit":"cái","qty":1000.0,"minQty":200.0,"lastPrice":0.0,"note":""},{"id":"nl-tra-lai","name":"Trà Lài","type":"Nguyên liệu","unit":"g","qty":1000.0,"minQty":200.0,"lastPrice":0.0,"note":""},{"id":"nl-tra-nhan-vang-cozy","name":"Trà Nhãn Vàng Cozy","type":"Nguyên liệu","unit":"gói","qty":100.0,"minQty":20.0,"lastPrice":0.0,"note":""},{"id":"bb-ly-700ml","name":"Ly 700ml","type":"Bao bì","unit":"cái","qty":1000.0,"minQty":200.0,"lastPrice":0.0,"note":""},{"id":"bb-ly-1-lit","name":"Ly 1 Lít","type":"Bao bì","unit":"cái","qty":1000.0,"minQty":200.0,"lastPrice":0.0,"note":""},{"id":"nl-tran-chau-trang","name":"Trân Châu Trắng","type":"Nguyên liệu","unit":"g","qty":1000.0,"minQty":200.0,"lastPrice":0.0,"note":""},{"id":"nl-tran-chau-en","name":"Trân Châu Đen","type":"Nguyên liệu","unit":"g","qty":1000.0,"minQty":200.0,"lastPrice":0.0,"note":""},{"id":"nl-bot-matcha","name":"Bột Matcha","type":"Nguyên liệu","unit":"g","qty":1000.0,"minQty":200.0,"lastPrice":0.0,"note":""},{"id":"nl-sua-oatside","name":"Sữa Oatside","type":"Nguyên liệu","unit":"ml","qty":1000.0,"minQty":200.0,"lastPrice":0.0,"note":""},{"id":"nl-syrup-davinci-hanh-nhan","name":"Syrup Davinci Hạnh Nhân","type":"Nguyên liệu","unit":"ml","qty":750.0,"minQty":200.0,"lastPrice":0.0,"note":""},{"id":"nl-syrup-uong-en-han-quoc-cruzie","name":"Syrup Đường Đen Hàn Quốc Cruzie","type":"Nguyên liệu","unit":"ml","qty":2000.0,"minQty":200.0,"lastPrice":0.0,"note":""},{"id":"nl-bot-ca-cao","name":"Bột Ca Cao","type":"Nguyên liệu","unit":"g","qty":1000.0,"minQty":200.0,"lastPrice":0.0,"note":""},{"id":"nl-hong-tra-cozy","name":"Hồng Trà Cozy","type":"Nguyên liệu","unit":"gói","qty":0,"minQty":0,"lastPrice":0,"note":"Tự bổ sung vì có trong công thức món nhưng thiếu ở tab Nguyên liệu"}];
-const IMPORTED_RECIPES = {"Cà Phê Đen":[["Cà Phê Hạt",20.0],["Ly Cà Phê",1.0]],"Cà Phê Sữa":[["Cà Phê Hạt",20.0],["Ly Cà Phê",1.0],["Sữa Đặc",30.0]],"Bạc Xỉu":[["Cà Phê Hạt",20.0],["Ly Lùn 500ml",1.0],["Sữa Đặc",20.0],["Rích Lùn",10.0],["Sữa Tươi Vinamil",70.0]],"Cà Phê Muối":[["Cà Phê Hạt",20.0],["Sữa Đặc",30.0],["Ly Lùn 500ml",1.0]],"Cà Phê Kem Dẻo BMT":[["Cà Phê Hạt",20.0],["Sữa Đặc",30.0],["Ly Lùn 500ml",1.0]],"Sữa Tươi Cà Phê":[["Cà Phê Hạt",20.0],["Sữa Đặc",20.0],["Rích Lùn",10.0],["Sữa Tươi Vinamil",80.0],["Ly Lùn 500ml",1.0]],"Trà Tắc":[["Trà Nhãn Vàng Cozy",1.0],["Ly 700ml",1.0]],"Trà Tắc 1L":[["Trà Nhãn Vàng Cozy",1.0],["Ly 1 Lít",1.0]],"Trà Chanh":[["Trà Nhãn Vàng Cozy",1.0],["Ly 700ml",1.0]],"Trà Chanh 1L":[["Trà Nhãn Vàng Cozy",1.0],["Ly 1 Lít",1.0]],"Hồng Trà":[["Hồng Trà Cozy",1.0],["Ly 700ml",1.0]],"Hồng Trà 1L":[["Hồng Trà Cozy",1.0],["Ly 1 Lít",1.0]],"Trà Ổi":[["Trà Lài",4.0],["Ly 700ml",1.0],["Trân Châu Trắng",5.0]],"Trà Ổi 1L":[["Trà Lài",5.0],["Ly 1 Lít",1.0],["Trân Châu Trắng",5.0]],"Trà Mãng Cầu Chanh Dây":[["Trà Lài",4.0],["Ly 700ml",1.0]],"Trà Mãng Cầu Chanh Dây 1L":[["Trà Lài",5.0],["Ly 1 Lít",1.0]],"Trà Trái Cây Tươi 1L":[["Trà Lài",5.0],["Ly 1 Lít",1.0]],"Matcha Latte":[["Bột Matcha",4.0],["Sữa Đặc",20.0],["Sữa Tươi Vinamil",70.0],["Ly Lùn 500ml",1.0]],"Matcha Oatside":[["Bột Matcha",4.0],["Sữa Đặc",20.0],["Sữa Oatside",70.0],["Ly Lùn 500ml",1.0],["Rích Lùn",10.0]],"Matcha Kem Muối":[["Bột Matcha",4.0],["Sữa Đặc",20.0],["Sữa Tươi Vinamil",70.0],["Ly Lùn 500ml",1.0],["Rích Lùn",11.0]],"Matcha Latte Hạnh Nhân":[["Bột Matcha",4.0],["Sữa Đặc",20.0],["Sữa Tươi Vinamil",70.0],["Ly Lùn 500ml",1.0],["Syrup Davinci Hạnh Nhân",15.0],["Rích Lùn",12.0]],"Matcha Cold Whisk":[["Bột Matcha",4.0],["Sữa Đặc",20.0],["Sữa Oatside",120.0],["Ly Lùn 500ml",1.0],["Rích Lùn",13.0]],"Trà Sữa Truyền Thống":[["Ly 700ml",1.0],["Trân Châu Đen",5.0]],"Trà Sữa Truyền Thống 1L":[["Ly 1 Lít",1.0],["Trân Châu Đen",5.0]],"Trà Sữa Matcha":[["Ly 700ml",1.0],["Ly 1 Lít",1.0]],"Sữa Tươi Trân Châu Đường Đen":[["Ly 700ml",1.0],["Sữa Tươi Vinamil",200.0],["Rích Lùn",10.0],["Syrup Đường Đen Hàn Quốc Cruzie",20.0],["Trân Châu Đen",5.0]],"Sữa Tươi Trân Châu Đường Đen 1L":[["Ly 1 Lít",1.0],["Sữa Tươi Vinamil",250.0],["Rích Lùn",10.0],["Syrup Đường Đen Hàn Quốc Cruzie",20.0],["Trân Châu Đen",5.0]],"Ca Cao Latte":[["Bột Ca Cao",5.0],["Rích Lùn",10.0],["Sữa Đặc",30.0],["Sữa Tươi Vinamil",70.0],["Ly Lùn 500ml",1.0]],"Ca Cao Kem Muối":[["Bột Ca Cao",5.0],["Rích Lùn",10.0],["Sữa Đặc",30.0],["Sữa Tươi Vinamil",70.0],["Ly Lùn 500ml",1.0]],"Ca Cao Yến Mạch":[["Bột Ca Cao",5.0],["Rích Lùn",10.0],["Sữa Đặc",30.0],["Sữa Oatside",70.0],["Ly Lùn 500ml",1.0]],"Phindi Hạnh Nhân":[["Cà Phê Hạt",20.0],["Ly Lùn 500ml",1.0],["Sữa Đặc",20.0],["Rích Lùn",10.0],["Sữa Tươi Vinamil",70.0],["Syrup Davinci Hạnh Nhân",15.0]]};
-
-const normName = (s='') => String(s).trim().toLocaleLowerCase('vi-VN');
-
-function mergeImportedIngredients(current=[]) {
-  const result = [...current];
-  for (const incoming of IMPORTED_INGREDIENTS) {
-    const idx = result.findIndex(x => normName(x.name) === normName(incoming.name));
-    if (idx >= 0) {
-      const existing = result[idx];
-      // Chỉ áp dữ liệu tồn ban đầu của file đúng 1 lần.
-      // Sau khi đã nhập, người dùng có thể nhập hàng/kiểm kê bình thường mà không bị reset lại.
-      if (existing.inventoryImportVersion !== INVENTORY_IMPORT_VERSION) {
-        result[idx] = {
-          ...existing,
-          ...incoming,
-          id: existing.id || incoming.id,
-          inventoryImportVersion: INVENTORY_IMPORT_VERSION
-        };
-      }
-    } else {
-      result.push({...incoming, inventoryImportVersion: INVENTORY_IMPORT_VERSION});
-    }
-  }
-  return result;
-}
-
-function applyImportedRecipes(currentProducts=[], mergedIngredients=[]) {
-  const idByName = Object.fromEntries(mergedIngredients.map(x => [normName(x.name), x.id]));
-  const recipeByName = Object.fromEntries(Object.entries(IMPORTED_RECIPES).map(([k,v]) => [normName(k), v]));
-  return currentProducts.map(product => {
-    const raw = recipeByName[normName(product.name)];
-    if (!raw) return product;
-    // Công thức từ file cũng chỉ áp đúng 1 lần để sau này chủ quán vẫn sửa thủ công được.
-    if (product.recipeImportVersion === INVENTORY_IMPORT_VERSION) return product;
-    const recipe = raw.map(([ingredientName, qty]) => ({
-      ingredientId: idByName[normName(ingredientName)],
-      qty: Number(qty)
-    })).filter(x => x.ingredientId);
-    return {...product, recipe, recipeImportVersion: INVENTORY_IMPORT_VERSION};
-  });
-}
-
 export default function NhaGeApp() {
   const [user, setUser] = useState(null);
   const [role,setRole] = useState('admin');
   const [dataOwnerId,setDataOwnerId] = useState(null);
+  const [shop,setShop] = useState(null);
+  const [needsShopSetup,setNeedsShopSetup] = useState(false);
   const [memberInfo,setMemberInfo] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [dataReady, setDataReady] = useState(false);
@@ -70,7 +26,7 @@ export default function NhaGeApp() {
   const [screen, setScreen] = useState('order');
   const [orderTab, setOrderTab] = useState('new');
   const [orders, setOrders] = useState([]);
-  const [products, setProducts] = useState(initialProducts);
+  const [products, setProducts] = useState([]);
   const [ingredients, setIngredients] = useState([]);
   const [stockReceipts, setStockReceipts] = useState([]);
   const [stockCounts, setStockCounts] = useState([]);
@@ -115,7 +71,7 @@ export default function NhaGeApp() {
     });
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user || null);
-      if (!session?.user) { setRole('admin'); setDataOwnerId(null); setMemberInfo(null); setDataReady(false); setOrders([]); setProducts(initialProducts); setIngredients([]); setStockReceipts([]); setStockCounts([]); setStockAdjustments([]); setCashTransactions([]); setExpenseCategories(defaultExpenseCategories); setOpeningBalances({cash:0,bank:0}); setDayClosings([]); }
+      if (!session?.user) { setRole('admin'); setDataOwnerId(null); setShop(null); setNeedsShopSetup(false); setMemberInfo(null); setDataReady(false); setOrders([]); setProducts([]); setIngredients([]); setStockReceipts([]); setStockCounts([]); setStockAdjustments([]); setCashTransactions([]); setExpenseCategories(defaultExpenseCategories); setOpeningBalances({cash:0,bank:0}); setDayClosings([]); }
     });
     return () => { alive = false; listener.subscription.unsubscribe(); };
   }, []);
@@ -123,55 +79,109 @@ export default function NhaGeApp() {
   useEffect(() => {
     if (!user || !supabase) return;
     let alive = true;
-    setDataReady(false); setSyncState('saving'); setSyncError('');
+    setDataReady(false); setNeedsShopSetup(false); setSyncState('saving'); setSyncError('');
     (async () => {
-      const { data: membership, error: memberError } = await supabase.from('shop_members').select('owner_user_id,username,display_name,role,active').eq('member_user_id', user.id).maybeSingle();
+      // 1) Nếu là nhân viên: tìm membership theo user hiện tại.
+      const { data: membership, error: memberError } = await supabase
+        .from('shop_members')
+        .select('shop_id,owner_user_id,username,display_name,role,active')
+        .eq('member_user_id', user.id)
+        .maybeSingle();
+
       if (!alive) return;
       if (memberError) { setSyncState('error'); setSyncError(memberError.message); return; }
+
       if (membership && membership.active === false) {
         await supabase.auth.signOut();
         alert('Tài khoản nhân viên đang bị khóa.');
         return;
       }
-      const ownerId = membership?.owner_user_id || user.id;
-      const resolvedRole = membership?.role || 'admin';
+
+      let activeShop = null;
+      let resolvedRole = 'admin';
+      let ownerId = user.id;
+
+      if (membership?.shop_id) {
+        const {data:s,error:sError}=await supabase
+          .from('shops')
+          .select('id,code,name,phone,address,plan,status,owner_user_id,created_at')
+          .eq('id',membership.shop_id)
+          .maybeSingle();
+        if (sError) { setSyncState('error'); setSyncError(sError.message); return; }
+        activeShop = s;
+        resolvedRole = membership.role || 'employee';
+        ownerId = membership.owner_user_id || s?.owner_user_id;
+      } else {
+        // 2) Chủ quán: tìm quán thuộc chính tài khoản này.
+        const {data:s,error:sError}=await supabase
+          .from('shops')
+          .select('id,code,name,phone,address,plan,status,owner_user_id,created_at')
+          .eq('owner_user_id',user.id)
+          .maybeSingle();
+        if (sError) { setSyncState('error'); setSyncError(sError.message); return; }
+        activeShop = s;
+      }
+
+      if (!alive) return;
+
+      // User mới đăng ký nhưng chưa tạo quán.
+      if (!activeShop) {
+        setRole('admin');
+        setDataOwnerId(user.id);
+        setShop(null);
+        setMemberInfo(null);
+        setNeedsShopSetup(true);
+        setSyncState('saved');
+        return;
+      }
+
+      if (activeShop.status === 'inactive') {
+        await supabase.auth.signOut();
+        alert('Quán này đang tạm ngưng hoạt động.');
+        return;
+      }
+
+      setShop(activeShop);
       setDataOwnerId(ownerId);
       setRole(resolvedRole);
       setMemberInfo(membership || null);
       setScreen(resolvedRole === 'admin' ? 'home' : 'order');
 
-      const { data, error } = await supabase.from('app_states').select('products,orders,ingredients,stock_receipts,stock_counts,stock_adjustments,cash_transactions,expense_categories,opening_balances,day_closings').eq('user_id', ownerId).maybeSingle();
+      // Dữ liệu giờ thuộc shop_id, không còn phụ thuộc vào thiết bị/tài khoản đang mở.
+      const { data, error } = await supabase
+        .from('app_states')
+        .select('products,orders,ingredients,stock_receipts,stock_counts,stock_adjustments,cash_transactions,expense_categories,opening_balances,day_closings')
+        .eq('shop_id', activeShop.id)
+        .maybeSingle();
+
       if (!alive) return;
       if (error) { setSyncState('error'); setSyncError(error.message); return; }
-      if (data) {
-        const baseIngredients = Array.isArray(data.ingredients) ? data.ingredients : [];
-        const mergedIngredients = mergeImportedIngredients(baseIngredients);
-        const baseProducts = Array.isArray(data.products) && data.products.length ? data.products : initialProducts;
-        const mergedProducts = applyImportedRecipes(baseProducts, mergedIngredients);
-        setProducts(mergedProducts);
-        setOrders(Array.isArray(data.orders) ? data.orders : []);
-        setIngredients(mergedIngredients);
-        setStockReceipts(Array.isArray(data.stock_receipts) ? data.stock_receipts : []);
-        setStockCounts(Array.isArray(data.stock_counts) ? data.stock_counts : []);
-        setStockAdjustments(Array.isArray(data.stock_adjustments) ? data.stock_adjustments : []);
-        setCashTransactions(Array.isArray(data.cash_transactions) ? data.cash_transactions : []);
-        setExpenseCategories(Array.isArray(data.expense_categories) && data.expense_categories.length ? data.expense_categories : defaultExpenseCategories);
-        setOpeningBalances(data.opening_balances && typeof data.opening_balances==='object' ? data.opening_balances : {cash:0,bank:0});
-        setDayClosings(Array.isArray(data.day_closings) ? data.day_closings : []);
-      } else {
-        const firstIngredients = mergeImportedIngredients([]);
-        const firstProducts = applyImportedRecipes(initialProducts, firstIngredients);
-        const { error: createError } = await supabase.from('app_states').insert({ user_id:ownerId, products:firstProducts, orders:[], ingredients:firstIngredients, stock_receipts:[], stock_counts:[], stock_adjustments:[], cash_transactions:[], expense_categories:defaultExpenseCategories, opening_balances:{cash:0,bank:0}, day_closings:[] });
-        if (createError) { setSyncState('error'); setSyncError(createError.message); return; }
-        setProducts(firstProducts); setIngredients(firstIngredients); setOrders([]);
+
+      if (!data) {
+        setSyncState('error');
+        setSyncError('Quán chưa có vùng dữ liệu. Hãy chạy migration v0.20.');
+        return;
       }
+
+      // SaaS: quán mới phải bắt đầu sạch. Không tự chèn menu/nguyên liệu Nhà Gé.
+      setProducts(Array.isArray(data.products) ? data.products : []);
+      setOrders(Array.isArray(data.orders) ? data.orders : []);
+      setIngredients(Array.isArray(data.ingredients) ? data.ingredients : []);
+      setStockReceipts(Array.isArray(data.stock_receipts) ? data.stock_receipts : []);
+      setStockCounts(Array.isArray(data.stock_counts) ? data.stock_counts : []);
+      setStockAdjustments(Array.isArray(data.stock_adjustments) ? data.stock_adjustments : []);
+      setCashTransactions(Array.isArray(data.cash_transactions) ? data.cash_transactions : []);
+      setExpenseCategories(Array.isArray(data.expense_categories) && data.expense_categories.length ? data.expense_categories : defaultExpenseCategories);
+      setOpeningBalances(data.opening_balances && typeof data.opening_balances==='object' ? data.opening_balances : {cash:0,bank:0});
+      setDayClosings(Array.isArray(data.day_closings) ? data.day_closings : []);
+
       setDataReady(true); setSyncState('saved');
     })();
+
     return () => { alive = false; };
   }, [user?.id]);
-
   useEffect(() => {
-    if (!user || !supabase || !dataReady || !dataOwnerId) return;
+    if (!user || !supabase || !dataReady || !shop?.id) return;
     setSyncState('saving');
     const timer = setTimeout(async () => {
       const payload = {
@@ -187,19 +197,14 @@ export default function NhaGeApp() {
 
       let error = null;
 
-      if (role === 'admin') {
-        const result = await supabase.from('app_states').upsert({ user_id:dataOwnerId, ...payload });
-        error = result.error;
-      } else {
-        const result = await supabase.from('app_states').update(payload).eq('user_id', dataOwnerId);
-        error = result.error;
-      }
+      const result = await supabase.from('app_states').update(payload).eq('shop_id', shop.id);
+      error = result.error;
 
       if (error) { setSyncState('error'); setSyncError(error.message); }
       else { setSyncState('saved'); setSyncError(''); }
     }, 500);
     return () => clearTimeout(timer);
-  }, [products, stockReceipts, stockCounts, cashTransactions, expenseCategories, openingBalances, dayClosings, role, user?.id, dataOwnerId, dataReady]);
+  }, [products, stockReceipts, stockCounts, cashTransactions, expenseCategories, openingBalances, dayClosings, role, user?.id, shop?.id, dataReady]);
 
   const dayOrders = useMemo(() => orders.filter(o => o.date === currentDate && o.status !== 'Đã hủy'), [orders, currentDate]);
   const todayRevenue = dayOrders.reduce((s, o) => s + Number(o.total || 0), 0);
@@ -249,10 +254,10 @@ export default function NhaGeApp() {
   }
 
   async function saveOrderAtomic(order, action='append', deltas=[], adjustments=[]) {
-    if (!supabase || !dataOwnerId) return {ok:false};
+    if (!supabase || !shop?.id) return {ok:false};
     setSyncState('saving');
-    const {data,error} = await supabase.rpc('save_order_atomic', {
-      p_owner_id:dataOwnerId,
+    const {data,error} = await supabase.rpc('save_order_atomic_v2', {
+      p_shop_id:shop.id,
       p_order:order,
       p_action:action,
       p_deltas:deltas,
@@ -275,11 +280,11 @@ export default function NhaGeApp() {
   }
 
   async function refreshSharedOrders() {
-    if (!supabase || !dataOwnerId) return;
+    if (!supabase || !shop?.id) return;
     const {data,error} = await supabase
       .from('app_states')
       .select('orders,ingredients,stock_adjustments')
-      .eq('user_id',dataOwnerId)
+      .eq('shop_id',shop.id)
       .maybeSingle();
     if (!error && data) {
       setOrders(Array.isArray(data.orders) ? data.orders : []);
@@ -292,15 +297,15 @@ export default function NhaGeApp() {
 
   // Nhận đơn mới từ thiết bị khác và tự tải lại khi quay lại tab.
   useEffect(() => {
-    if (!supabase || !dataReady || !dataOwnerId) return;
+    if (!supabase || !dataReady || !shop?.id) return;
     refreshSharedOrders();
     const channel = supabase
-      .channel(`app-state-${dataOwnerId}`)
+      .channel(`app-state-${shop.id}`)
       .on('postgres_changes', {
         event:'UPDATE',
         schema:'public',
         table:'app_states',
-        filter:`user_id=eq.${dataOwnerId}`
+        filter:`shop_id=eq.${shop.id}`
       }, () => refreshSharedOrders())
       .subscribe();
 
@@ -314,7 +319,7 @@ export default function NhaGeApp() {
       document.removeEventListener('visibilitychange', onVisible);
       supabase.removeChannel(channel);
     };
-  }, [dataOwnerId, dataReady]);
+  }, [shop?.id, dataReady]);
 
 
   async function completeOrder() {
@@ -394,11 +399,12 @@ export default function NhaGeApp() {
   if (authLoading) return <LoadingScreen text="Đang kiểm tra tài khoản…" />;
   if (!supabaseReady) return <SetupScreen />;
   if (!user) return <AuthScreen />;
+  if (needsShopSetup) return <CreateShopScreen user={user} onCreated={()=>window.location.reload()} onSignOut={signOut} />;
   if (!dataReady && syncState !== 'error') return <LoadingScreen text="Đang tải dữ liệu quán…" />;
   if (syncState === 'error' && !dataReady) return <SyncErrorScreen message={syncError} />;
 
   return <div className="app-shell">
-    <header className="topbar"><div><div className="brand">TIỆM NHÀ GÉ</div><div className="date">Quản lý quán · Bản 0.18 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn settings-btn" aria-label="Cài đặt" title="Cài đặt" onClick={() => setScreen('more')}>⚙</button></header>
+    <header className="topbar"><div><div className="brand">{shop?.name||'QUẢN LÝ QUÁN'}</div><div className="date">Free Beta · Bản 0.20 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn settings-btn" aria-label="Cài đặt" title="Cài đặt" onClick={() => setScreen('more')}>⚙</button></header>
     <main>
       <div className="page-transition" key={screen}>
       {role==='admin' && screen === 'home' && <Home todayRevenue={todayRevenue} dayOrders={dayOrders} todayQty={todayQty} cashToday={cashToday} bankToday={bankToday} knownCostToday={knownCostToday} ingredients={ingredients} closings={dayClosings} go={setScreen} openOrders={() => {setScreen('order');setOrderTab('list')}} />}
@@ -409,8 +415,9 @@ export default function NhaGeApp() {
       {role==='admin' && screen === 'cash' && <Cash orders={orders} receipts={stockReceipts} transactions={cashTransactions} setTransactions={setCashTransactions} categories={expenseCategories} setCategories={setExpenseCategories} openingBalances={openingBalances} setOpeningBalances={setOpeningBalances} />}
       {role==='admin' && screen === 'reports' && <Reports orders={orders} products={products} receipts={stockReceipts} transactions={cashTransactions} openOrder={setSelectedOrder} />}
       {role==='admin' && screen === 'closeDay' && <CloseDay orders={orders} receipts={stockReceipts} transactions={cashTransactions} closings={dayClosings} setClosings={setDayClosings} back={()=>setScreen('home')} />}
-      {role==='admin' && screen === 'employees' && <EmployeeAccounts user={user} back={()=>setScreen('more')} />}
-      {screen === 'more' && <More role={role} memberInfo={memberInfo} go={setScreen} user={user} onSignOut={signOut} syncState={syncState} />}
+      {role==='admin' && screen === 'employees' && <EmployeeAccounts user={user} shop={shop} back={()=>setScreen('more')} />}
+      {role==='admin' && screen === 'shopSettings' && <ShopSettings shop={shop} setShop={setShop} user={user} back={()=>setScreen('more')} />}
+      {screen === 'more' && <More role={role} memberInfo={memberInfo} shop={shop} go={setScreen} user={user} onSignOut={signOut} syncState={syncState} />}
       </div>
     </main>
     <nav className={'bottom-nav '+(role!=='admin'?'employee-nav':'')}>
@@ -430,18 +437,146 @@ export default function NhaGeApp() {
 }
 
 function AuthScreen(){
-  const [username,setUsername]=useState('Admin'); const [password,setPassword]=useState('admin123'); const [showPassword,setShowPassword]=useState(false); const [busy,setBusy]=useState(false); const [message,setMessage]=useState('');
-  async function submit(e){ e.preventDefault(); setBusy(true); setMessage('');
-    const normalized = username.trim().toLowerCase();
-    const email = normalized === 'admin' ? 'admin@tiemnhage.local' : `${normalized}@tiemnhage.local`;
-    const {error}=await supabase.auth.signInWithPassword({email,password});
-    if(error) setMessage('Sai tên đăng nhập hoặc mật khẩu.');
+  const [mode,setMode]=useState('owner');
+  const [ownerMode,setOwnerMode]=useState('login');
+  const [email,setEmail]=useState('');
+  const [username,setUsername]=useState('');
+  const [shopCode,setShopCode]=useState('');
+  const [password,setPassword]=useState('');
+  const [showPassword,setShowPassword]=useState(false);
+  const [busy,setBusy]=useState(false);
+  const [message,setMessage]=useState('');
+  const [messageOk,setMessageOk]=useState(false);
+
+  async function loginOwner(e){
+    e.preventDefault(); setBusy(true); setMessage(''); setMessageOk(false);
+    const login=String(email||'').trim().toLowerCase();
+    // Giữ tương thích tài khoản Admin cũ của Nhà Gé.
+    const resolvedEmail=login==='admin'?'admin@tiemnhage.local':login;
+    const {error}=await supabase.auth.signInWithPassword({email:resolvedEmail,password});
+    if(error) setMessage('Sai email/tên đăng nhập hoặc mật khẩu.');
     setBusy(false);
   }
-  return <div className="auth-shell"><div className="auth-card"><div className="auth-logo">GÉ</div><h1>Quản lý quán</h1><p>Đăng nhập để dùng chung dữ liệu trên điện thoại và máy tính.</p><form className="auth-form" onSubmit={submit}><label>Tên đăng nhập<input required value={username} onChange={e=>setUsername(e.target.value)} autoCapitalize="none" /></label><label>Mật khẩu<div className="password-field"><input type={showPassword?'text':'password'} required value={password} onChange={e=>setPassword(e.target.value)} /><button type="button" className="password-eye" onClick={()=>setShowPassword(v=>!v)} aria-label={showPassword?'Ẩn mật khẩu':'Xem mật khẩu'}>{showPassword?'◉':'◌'}</button></div></label>{message&&<div className="auth-message">{message}</div>}<button className="primary full" disabled={busy}>{busy?'Đang đăng nhập…':'Đăng nhập'}</button></form><p className="hint">Tài khoản chủ quán ban đầu: <b>Admin</b>. Sau khi kết nối dữ liệu, nên đổi mật khẩu mặc định.</p></div></div>
+
+  async function loginEmployee(e){
+    e.preventDefault(); setBusy(true); setMessage(''); setMessageOk(false);
+    const u=username.trim().toLowerCase();
+    const code=shopCode.trim().toLowerCase().replace(/\s+/g,'');
+    let error=null;
+
+    if(code){
+      const primary=`${code}.${u}@staff.quanlyquan.local`;
+      ({error}=await supabase.auth.signInWithPassword({email:primary,password}));
+    }
+
+    // Tài khoản nhân viên tạo trước v0.20 vẫn đăng nhập được.
+    if(!code || error){
+      const legacy=`${u}@tiemnhage.local`;
+      const legacyResult=await supabase.auth.signInWithPassword({email:legacy,password});
+      error=legacyResult.error;
+    }
+
+    if(error) setMessage('Sai mã quán, tên đăng nhập hoặc mật khẩu.');
+    setBusy(false);
+  }
+
+  async function signup(e){
+    e.preventDefault(); setBusy(true); setMessage(''); setMessageOk(false);
+    const ownerEmail=email.trim().toLowerCase();
+    if(!ownerEmail.includes('@')) { setBusy(false); setMessage('Vui lòng nhập email thật để tạo tài khoản chủ quán.'); return; }
+    if(password.length<6) { setBusy(false); setMessage('Mật khẩu cần ít nhất 6 ký tự.'); return; }
+    const {data,error}=await supabase.auth.signUp({email:ownerEmail,password,options:{emailRedirectTo:window.location.origin}});
+    setBusy(false);
+    if(error){setMessage(error.message);return;}
+    if(data?.session){
+      setMessageOk(true); setMessage('Tạo tài khoản thành công. Đang mở bước tạo quán…');
+    }else{
+      setMessageOk(true); setMessage('Đã tạo tài khoản. Hãy mở email xác nhận, sau đó quay lại đăng nhập để tạo quán.');
+    }
+  }
+
+  async function forgotPassword(){
+    const ownerEmail=email.trim().toLowerCase();
+    if(!ownerEmail.includes('@')) return setMessage('Nhập email chủ quán trước.');
+    setBusy(true); setMessage(''); setMessageOk(false);
+    const {error}=await supabase.auth.resetPasswordForEmail(ownerEmail,{redirectTo:window.location.origin});
+    setBusy(false);
+    if(error)return setMessage(error.message);
+    setMessageOk(true); setMessage('Đã gửi email đặt lại mật khẩu.');
+  }
+
+  return <div className="auth-shell"><div className="auth-card saas-auth">
+    <div className="auth-logo">Q</div>
+    <h1>Quản lý quán</h1>
+    <p>Free Beta · Mỗi quán có vùng dữ liệu riêng.</p>
+
+    <div className="auth-tabs">
+      <button className={mode==='owner'?'active':''} onClick={()=>{setMode('owner');setMessage('')}}>Chủ quán</button>
+      <button className={mode==='employee'?'active':''} onClick={()=>{setMode('employee');setMessage('')}}>Nhân viên</button>
+    </div>
+
+    {mode==='owner'&&<>
+      <div className="auth-subtabs">
+        <button className={ownerMode==='login'?'active':''} onClick={()=>{setOwnerMode('login');setMessage('')}}>Đăng nhập</button>
+        <button className={ownerMode==='signup'?'active':''} onClick={()=>{setOwnerMode('signup');setMessage('')}}>Đăng ký miễn phí</button>
+      </div>
+      <form className="auth-form" onSubmit={ownerMode==='signup'?signup:loginOwner}>
+        <label>{ownerMode==='login'?'Email / Admin':'Email chủ quán'}<input required value={email} onChange={e=>setEmail(e.target.value)} autoCapitalize="none" autoComplete="email" placeholder={ownerMode==='login'?'email@quan.com':'ban@quan.com'} /></label>
+        <label>Mật khẩu<div className="password-field"><input type={showPassword?'text':'password'} required minLength={6} value={password} onChange={e=>setPassword(e.target.value)} /><button type="button" className="password-eye" onClick={()=>setShowPassword(v=>!v)} aria-label={showPassword?'Ẩn mật khẩu':'Xem mật khẩu'}>{showPassword?'◉':'◌'}</button></div></label>
+        {message&&<div className={'auth-message '+(messageOk?'ok':'')}>{message}</div>}
+        <button className="primary full" disabled={busy}>{busy?'Đang xử lý…':ownerMode==='signup'?'Tạo tài khoản Free':'Đăng nhập'}</button>
+        {ownerMode==='login'&&<button type="button" className="auth-link-btn" onClick={forgotPassword} disabled={busy}>Quên mật khẩu?</button>}
+      </form>
+      {ownerMode==='signup'&&<p className="hint">Sau khi đăng ký, app sẽ yêu cầu tạo tên quán. Quán mới bắt đầu với dữ liệu trống.</p>}
+    </>}
+
+    {mode==='employee'&&<form className="auth-form" onSubmit={loginEmployee}>
+      <label>Mã quán <input value={shopCode} onChange={e=>setShopCode(e.target.value.toUpperCase())} autoCapitalize="characters" placeholder="Ví dụ: A1B2C3"/></label>
+      <label>Tên đăng nhập<input required value={username} onChange={e=>setUsername(e.target.value)} autoCapitalize="none" /></label>
+      <label>Mật khẩu<div className="password-field"><input type={showPassword?'text':'password'} required value={password} onChange={e=>setPassword(e.target.value)} /><button type="button" className="password-eye" onClick={()=>setShowPassword(v=>!v)}>{showPassword?'◉':'◌'}</button></div></label>
+      {message&&<div className="auth-message">{message}</div>}
+      <button className="primary full" disabled={busy}>{busy?'Đang đăng nhập…':'Đăng nhập nhân viên'}</button>
+      <p className="hint">Tài khoản nhân viên cũ của Nhà Gé có thể để trống Mã quán.</p>
+    </form>}
+  </div></div>
+}
+
+function CreateShopScreen({user,onCreated,onSignOut}){
+  const [form,setForm]=useState({name:'',phone:'',address:''});
+  const [busy,setBusy]=useState(false);
+  const [message,setMessage]=useState('');
+
+  async function submit(e){
+    e.preventDefault();
+    if(!form.name.trim())return;
+    setBusy(true); setMessage('');
+    const {data,error}=await supabase.rpc('create_my_shop',{
+      p_name:form.name.trim(),
+      p_phone:form.phone.trim()||null,
+      p_address:form.address.trim()||null
+    });
+    setBusy(false);
+    if(error){setMessage(error.message);return;}
+    onCreated(data);
+  }
+
+  return <div className="auth-shell"><div className="auth-card create-shop-card">
+    <div className="auth-logo">Q</div>
+    <div className="free-pill">FREE BETA</div>
+    <h1>Tạo quán của bạn</h1>
+    <p>Mỗi quán có dữ liệu riêng. Bạn có thể thêm menu, kho và nhân viên sau.</p>
+    <form className="auth-form" onSubmit={submit}>
+      <label>Tên quán<input required value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Ví dụ: Mây Coffee"/></label>
+      <label>Số điện thoại <span className="optional">không bắt buộc</span><input value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} placeholder="09xx xxx xxx"/></label>
+      <label>Địa chỉ <span className="optional">không bắt buộc</span><input value={form.address} onChange={e=>setForm({...form,address:e.target.value})} placeholder="Địa chỉ quán"/></label>
+      {message&&<div className="auth-message">{message}</div>}
+      <button className="primary full" disabled={busy}>{busy?'Đang tạo quán…':'Bắt đầu sử dụng miễn phí'}</button>
+    </form>
+    <button className="auth-link-btn" onClick={onSignOut}>Đăng xuất tài khoản này</button>
+  </div></div>
 }
 function LoadingScreen({text}){ return <div className="auth-shell"><div className="auth-card center"><div className="spinner"></div><strong>{text}</strong></div></div> }
-function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.18 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
+function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.20 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
 function SyncErrorScreen({message}){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa tải được dữ liệu</h1><p>Hãy kiểm tra đã chạy file <b>supabase.sql</b> trong Supabase chưa.</p><div className="auth-message">{message}</div></div></div> }
 
 function Nav({active,icon,label,onClick}) { return <button className={'nav-item '+(active?'active':'')} onClick={onClick}><span>{icon}</span><small>{label}</small></button> }
@@ -1203,7 +1338,7 @@ function CloseDay({orders,receipts,transactions,closings,setClosings,back}){
 
 
 
-function EmployeeAccounts({user,back}){
+function EmployeeAccounts({user,shop,back}){
   const [employees,setEmployees]=useState([]);
   const [loading,setLoading]=useState(true);
   const [showCreate,setShowCreate]=useState(false);
@@ -1212,13 +1347,18 @@ function EmployeeAccounts({user,back}){
   const [showPassword,setShowPassword]=useState(false);
 
   async function load(){
+    if(!shop?.id)return;
     setLoading(true);
-    const {data,error}=await supabase.from('shop_members').select('member_user_id,username,display_name,role,active,created_at').eq('owner_user_id',user.id).order('created_at',{ascending:true});
+    const {data,error}=await supabase
+      .from('shop_members')
+      .select('member_user_id,username,display_name,role,active,created_at')
+      .eq('shop_id',shop.id)
+      .order('created_at',{ascending:true});
     if(error) alert(error.message);
     setEmployees(data||[]);
     setLoading(false);
   }
-  useEffect(()=>{load();},[user?.id]);
+  useEffect(()=>{load();},[shop?.id]);
 
   async function createEmployee(e){
     e.preventDefault();
@@ -1227,7 +1367,11 @@ function EmployeeAccounts({user,back}){
     if(!/^[a-z0-9._-]+$/.test(username))return alert('Tên đăng nhập chỉ dùng chữ thường, số, dấu chấm, gạch ngang hoặc gạch dưới.');
     setBusy(true);
     const {data:{session}}=await supabase.auth.getSession();
-    const res=await fetch('/api/employees',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${session?.access_token||''}`},body:JSON.stringify({username,password:form.password,displayName:form.displayName.trim()||username})});
+    const res=await fetch('/api/employees',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${session?.access_token||''}`},
+      body:JSON.stringify({shopId:shop.id,username,password:form.password,displayName:form.displayName.trim()||username})
+    });
     const data=await res.json().catch(()=>({}));
     setBusy(false);
     if(!res.ok)return alert(data.error||'Không tạo được tài khoản.');
@@ -1235,21 +1379,94 @@ function EmployeeAccounts({user,back}){
   }
 
   async function toggleEmployee(emp){
-    const {error}=await supabase.from('shop_members').update({active:!emp.active}).eq('member_user_id',emp.member_user_id).eq('owner_user_id',user.id);
+    const {error}=await supabase.from('shop_members')
+      .update({active:!emp.active})
+      .eq('member_user_id',emp.member_user_id)
+      .eq('shop_id',shop.id);
     if(error)return alert(error.message);
     load();
   }
 
   return <section className="screen employee-screen">
-    <div className="screen-head"><div><h2>Tài khoản nhân viên</h2><p>Tạo tài khoản rồi gửi tên đăng nhập và mật khẩu cho nhân viên.</p></div><button className="secondary small" onClick={back}>← Quay lại</button></div>
+    <div className="screen-head"><div><h2>Tài khoản nhân viên</h2><p>Nhân viên đăng nhập bằng Mã quán + tên đăng nhập + mật khẩu.</p></div><button className="secondary small" onClick={back}>← Quay lại</button></div>
+    <div className="card shop-code-card"><span>MÃ QUÁN</span><strong>{shop?.code||'—'}</strong><small>Gửi mã này cùng tài khoản cho nhân viên mới.</small></div>
     <button className="primary full employee-create-btn" onClick={()=>setShowCreate(true)}>+ Tạo tài khoản nhân viên</button>
     <div className="card employee-list">
       {loading&&<div className="empty">Đang tải…</div>}
       {!loading&&!employees.length&&<div className="empty">Chưa có tài khoản nhân viên.</div>}
       {employees.map(emp=><div className="employee-row" key={emp.member_user_id}><div><strong>{emp.display_name||emp.username}</strong><small>Tên đăng nhập: {emp.username}</small><span className={'status '+(!emp.active?'cancel':'')}>{emp.active?'Đang hoạt động':'Đã khóa'}</span></div><button className={emp.active?'secondary':'primary'} onClick={()=>toggleEmployee(emp)}>{emp.active?'Khóa':'Mở lại'}</button></div>)}
     </div>
-    {showCreate&&<Modal title="Tạo tài khoản nhân viên" close={()=>setShowCreate(false)} className="employee-modal"><form className="form-card plain" onSubmit={createEmployee}><label>Tên nhân viên<input value={form.displayName} onChange={e=>setForm({...form,displayName:e.target.value})} placeholder="Ví dụ: Minh"/></label><label>Tên đăng nhập<input required autoCapitalize="none" value={form.username} onChange={e=>setForm({...form,username:e.target.value})} placeholder="Ví dụ: nv01"/></label><label>Mật khẩu<div className="password-field"><input required type={showPassword?'text':'password'} value={form.password} onChange={e=>setForm({...form,password:e.target.value})} placeholder="Chữ hoa, chữ thường, số, @, #"/><button type="button" className="password-eye" onClick={()=>setShowPassword(v=>!v)} aria-label={showPassword?'Ẩn mật khẩu':'Xem mật khẩu'}>{showPassword?'◉':'◌'}</button></div></label><p className="hint">Nhân viên chỉ cần tên đăng nhập và mật khẩu, không cần email.</p><button className="primary full" disabled={busy}>{busy?'Đang tạo…':'Tạo tài khoản'}</button></form></Modal>}
+    {showCreate&&<Modal title="Tạo tài khoản nhân viên" close={()=>setShowCreate(false)} className="employee-modal"><form className="form-card plain" onSubmit={createEmployee}>
+      <div className="mini-shop-code">Mã quán: <strong>{shop?.code}</strong></div>
+      <label>Tên nhân viên<input value={form.displayName} onChange={e=>setForm({...form,displayName:e.target.value})} placeholder="Ví dụ: Minh"/></label>
+      <label>Tên đăng nhập<input required autoCapitalize="none" value={form.username} onChange={e=>setForm({...form,username:e.target.value})} placeholder="Ví dụ: nv01"/></label>
+      <label>Mật khẩu<div className="password-field"><input required minLength={6} type={showPassword?'text':'password'} value={form.password} onChange={e=>setForm({...form,password:e.target.value})} placeholder="Tối thiểu 6 ký tự"/><button type="button" className="password-eye" onClick={()=>setShowPassword(v=>!v)}>{showPassword?'◉':'◌'}</button></div></label>
+      <p className="hint">Nhân viên chỉ thấy Order và tài khoản của họ.</p>
+      <button className="primary full" disabled={busy}>{busy?'Đang tạo…':'Tạo tài khoản'}</button>
+    </form></Modal>}
   </section>
 }
 
-function More({go,user,onSignOut,syncState,role='admin',memberInfo=null}){const isAdmin=role==='admin';return <section className="screen"><h2>{isAdmin?'Thêm':'Tài khoản'}</h2><div className="card account-card"><div><div className="muted">TÀI KHOẢN</div><strong>{isAdmin?'Admin · Chủ quán':`${memberInfo?.display_name||memberInfo?.username||'Nhân viên'} · Nhân viên`}</strong><small>{syncState==='saving'?'Đang đồng bộ dữ liệu…':syncState==='error'?'Có lỗi đồng bộ':'Dữ liệu đã đồng bộ'}</small></div><button className="secondary" onClick={onSignOut}>Đăng xuất</button></div>{isAdmin&&<div className="report-menu"><button onClick={()=>go('employees')}>Tài khoản nhân viên <span>›</span></button><button onClick={()=>go('foodapp')}>Nhập đơn từ App Food <span>›</span></button><button onClick={()=>go('products')}>Món & giá vốn <span>›</span></button><button onClick={()=>go('stock')}>Nguyên liệu & kho <span>›</span></button><button onClick={()=>go('closeDay')}>Chốt ngày <span>›</span></button></div>}</section>}
+function ShopSettings({shop,setShop,user,back}){
+  const [form,setForm]=useState({name:shop?.name||'',phone:shop?.phone||'',address:shop?.address||''});
+  const [busy,setBusy]=useState(false);
+  const [password,setPassword]=useState('');
+  const [showPassword,setShowPassword]=useState(false);
+
+  async function save(e){
+    e.preventDefault(); setBusy(true);
+    const payload={name:form.name.trim(),phone:form.phone.trim()||null,address:form.address.trim()||null};
+    const {data,error}=await supabase.from('shops').update(payload).eq('id',shop.id).select('id,code,name,phone,address,plan,status,owner_user_id,created_at').single();
+    setBusy(false);
+    if(error)return alert(error.message);
+    setShop(data); alert('Đã cập nhật thông tin quán.');
+  }
+
+  async function changePassword(e){
+    e.preventDefault();
+    if(password.length<6)return alert('Mật khẩu cần ít nhất 6 ký tự.');
+    setBusy(true);
+    const {error}=await supabase.auth.updateUser({password});
+    setBusy(false);
+    if(error)return alert(error.message);
+    setPassword(''); alert('Đã đổi mật khẩu.');
+  }
+
+  return <section className="screen">
+    <div className="screen-head"><div><h2>Thông tin quán</h2><p>Thông tin nhận diện không gian làm việc hiện tại.</p></div><button className="secondary small" onClick={back}>← Quay lại</button></div>
+    <div className="card shop-plan-card"><div><span>GÓI HIỆN TẠI</span><strong>{String(shop?.plan||'free').toUpperCase()}</strong></div><div><span>MÃ QUÁN</span><strong>{shop?.code}</strong></div></div>
+    <form className="card form-card" onSubmit={save}>
+      <label>Tên quán<input required value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/></label>
+      <label>Số điện thoại<input value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})}/></label>
+      <label>Địa chỉ<input value={form.address} onChange={e=>setForm({...form,address:e.target.value})}/></label>
+      <button className="primary full" disabled={busy}>{busy?'Đang lưu…':'Lưu thông tin quán'}</button>
+    </form>
+    <form className="card form-card" onSubmit={changePassword}>
+      <div className="section-title">Đổi mật khẩu chủ quán</div>
+      <label>Mật khẩu mới<div className="password-field"><input type={showPassword?'text':'password'} minLength={6} required value={password} onChange={e=>setPassword(e.target.value)}/><button type="button" className="password-eye" onClick={()=>setShowPassword(v=>!v)}>{showPassword?'◉':'◌'}</button></div></label>
+      <button className="secondary full" disabled={busy}>Đổi mật khẩu</button>
+    </form>
+  </section>
+}
+function More({go,user,onSignOut,syncState,role='admin',memberInfo=null,shop=null}){
+  const isAdmin=role==='admin';
+  return <section className="screen">
+    <h2>{isAdmin?'Cài đặt':'Tài khoản'}</h2>
+    <div className="card account-card">
+      <div>
+        <div className="muted">{shop?.name||'QUÁN'}</div>
+        <strong>{isAdmin?'Chủ quán':`${memberInfo?.display_name||memberInfo?.username||'Nhân viên'} · Nhân viên`}</strong>
+        <small>{isAdmin?`Gói Free · Mã quán ${shop?.code||'—'}`:(syncState==='saving'?'Đang đồng bộ dữ liệu…':syncState==='error'?'Có lỗi đồng bộ':'Dữ liệu đã đồng bộ')}</small>
+      </div>
+      <button className="secondary" onClick={onSignOut}>Đăng xuất</button>
+    </div>
+    {isAdmin&&<div className="report-menu">
+      <button onClick={()=>go('shopSettings')}>Thông tin quán & tài khoản <span>›</span></button>
+      <button onClick={()=>go('employees')}>Tài khoản nhân viên <span>›</span></button>
+      <button onClick={()=>go('foodapp')}>Nhập đơn từ App Food <span>›</span></button>
+      <button onClick={()=>go('products')}>Món & giá vốn <span>›</span></button>
+      <button onClick={()=>go('stock')}>Nguyên liệu & kho <span>›</span></button>
+      <button onClick={()=>go('closeDay')}>Chốt ngày <span>›</span></button>
+    </div>}
+  </section>
+}

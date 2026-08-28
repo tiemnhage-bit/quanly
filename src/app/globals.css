@@ -839,3 +839,28 @@ button:active{
 
 /* 0.18 - Đồng bộ đa thiết bị */
 .sync.error{color:#b42318}
+
+
+/* ===== v0.20 SaaS Free ===== */
+.saas-auth{max-width:430px}
+.auth-tabs,.auth-subtabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#f3f4f6;padding:4px;border-radius:14px;margin:16px 0 12px}
+.auth-tabs button,.auth-subtabs button{border:0;background:transparent;border-radius:10px;padding:10px 8px;font:inherit;font-weight:700;color:var(--muted);cursor:pointer}
+.auth-tabs button.active,.auth-subtabs button.active{background:#fff;color:#111;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.auth-subtabs{margin:0 0 14px;background:#fff7ed;border:1px solid #ffedd5}
+.auth-link-btn{border:0;background:transparent;color:#d66700;font-weight:700;padding:9px 6px;cursor:pointer;text-align:center;width:100%}
+.auth-message.ok{background:#ecfdf3;border-color:#abefc6;color:#067647}
+.create-shop-card{max-width:460px}
+.free-pill{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;background:#fff3e3;color:#a45100;font-size:11px;font-weight:900;letter-spacing:.08em;margin:8px 0}
+.optional{font-size:11px;font-weight:500;color:var(--muted)}
+.shop-code-card{display:grid;gap:4px;text-align:center;background:#fff7ed;border-color:#fed7aa}
+.shop-code-card span,.shop-plan-card span{font-size:10px;font-weight:900;letter-spacing:.08em;color:var(--muted)}
+.shop-code-card strong{font-size:28px;letter-spacing:.14em;color:#d66700}
+.shop-code-card small{color:var(--muted)}
+.mini-shop-code{padding:10px 12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;color:#9a4c00}
+.shop-plan-card{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.shop-plan-card>div{display:grid;gap:4px;padding:12px;border-radius:12px;background:#f8fafc}
+.shop-plan-card strong{font-size:18px}
+@media(max-width:520px){
+  .auth-card.saas-auth,.create-shop-card{width:min(100% - 24px,430px)}
+  .shop-plan-card{grid-template-columns:1fr}
+}
