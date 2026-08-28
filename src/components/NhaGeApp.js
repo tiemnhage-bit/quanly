@@ -404,7 +404,7 @@ export default function NhaGeApp() {
   if (syncState === 'error' && !dataReady) return <SyncErrorScreen message={syncError} />;
 
   return <div className="app-shell">
-    <header className="topbar"><div><div className="brand">{shop?.name||'QUẢN LÝ QUÁN'}</div><div className="date">Free Beta · Bản 0.22 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn settings-btn" aria-label="Cài đặt" title="Cài đặt" onClick={() => setScreen('more')}>⚙</button></header>
+    <header className="topbar"><div><div className="brand">{shop?.name||'QUẢN LÝ QUÁN'}</div><div className="date">Free Beta · Bản 0.23 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn settings-btn" aria-label="Cài đặt" title="Cài đặt" onClick={() => setScreen('more')}>⚙</button></header>
     <main>
       <div className="page-transition" key={screen}>
       {role==='admin' && screen === 'home' && <Home todayRevenue={todayRevenue} dayOrders={dayOrders} todayQty={todayQty} cashToday={cashToday} bankToday={bankToday} knownCostToday={knownCostToday} ingredients={ingredients} closings={dayClosings} go={setScreen} openOrders={() => {setScreen('order');setOrderTab('list')}} />}
@@ -480,16 +480,37 @@ function AuthScreen(){
     const raw=String(phone||'').trim();
 
     // Giữ tương thích tài khoản Admin cũ của Nhà Gé.
-    const resolvedEmail=raw.toLowerCase()==='admin'
-      ? 'admin@tiemnhage.local'
-      : ownerPhoneLoginEmail(raw);
+    if(raw.toLowerCase()==='admin'){
+      const {error}=await supabase.auth.signInWithPassword({email:'admin@tiemnhage.local',password});
+      if(error)setMessage('Sai tài khoản hoặc mật khẩu.');
+      setBusy(false);
+      return;
+    }
 
-    if(raw.toLowerCase()!=='admin' && !validPhone()){
+    if(!validPhone()){
       setBusy(false); setMessage('Số điện thoại chưa đúng. Ví dụ: 0901234567'); return;
     }
 
-    const {error}=await supabase.auth.signInWithPassword({email:resolvedEmail,password});
-    if(error) setMessage('Sai số điện thoại hoặc mật khẩu.');
+    try{
+      const res=await fetch('/api/auth/login',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({phone:normalizeOwnerPhone(phone),password})
+      });
+      const data=await res.json().catch(()=>({}));
+      if(!res.ok){
+        setBusy(false);
+        setMessage(data.error||'Sai số điện thoại hoặc mật khẩu.');
+        return;
+      }
+      const {error}=await supabase.auth.setSession({
+        access_token:data.access_token,
+        refresh_token:data.refresh_token
+      });
+      if(error)setMessage('Không mở được phiên đăng nhập. Vui lòng thử lại.');
+    }catch(err){
+      setMessage('Không kết nối được máy chủ. Vui lòng thử lại.');
+    }
     setBusy(false);
   }
 
@@ -545,11 +566,24 @@ function AuthScreen(){
         return;
       }
 
-      // API đã tạo user xác thực sẵn. Đăng nhập ngay bằng SĐT.
-      const loginEmail=ownerPhoneLoginEmail(phone);
-      const {error}=await supabase.auth.signInWithPassword({email:loginEmail,password});
+      // Đăng nhập ngay qua resolver SĐT -> tài khoản Auth nội bộ.
+      const loginRes=await fetch('/api/auth/login',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({phone:normalizeOwnerPhone(phone),password})
+      });
+      const loginData=await loginRes.json().catch(()=>({}));
       setBusy(false);
-      if(error){
+      if(!loginRes.ok){
+        setMessageOk(true);
+        setMessage('Tạo tài khoản thành công. Hãy chuyển sang Đăng nhập.');
+        return;
+      }
+      const {error:sessionError}=await supabase.auth.setSession({
+        access_token:loginData.access_token,
+        refresh_token:loginData.refresh_token
+      });
+      if(sessionError){
         setMessageOk(true);
         setMessage('Tạo tài khoản thành công. Hãy chuyển sang Đăng nhập.');
         return;
@@ -759,7 +793,7 @@ function CreateShopScreen({user,onCreated,onSignOut}){
   </div></div>
 }
 function LoadingScreen({text}){ return <div className="auth-shell"><div className="auth-card center"><div className="spinner"></div><strong>{text}</strong></div></div> }
-function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.22 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
+function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.23 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
 function SyncErrorScreen({message}){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa tải được dữ liệu</h1><p>Hãy kiểm tra đã chạy file <b>supabase.sql</b> trong Supabase chưa.</p><div className="auth-message">{message}</div></div></div> }
 
 function Nav({active,icon,label,onClick}) { return <button className={'nav-item '+(active?'active':'')} onClick={onClick}><span>{icon}</span><small>{label}</small></button> }
@@ -863,21 +897,114 @@ function OrdersScreen({products,tab,setTab,cart,addProduct,changeQty,payment,set
 
 function ProductManager({products,setProducts,ingredients,back}) {
   const empty = {id:null,name:'',category:'',price:'',cost:'',active:true,recipe:[]};
-  const [form,setForm] = useState(empty); const [editing,setEditing] = useState(false); const [recipeProduct,setRecipeProduct]=useState(null);
-  function submit(e){ e.preventDefault(); if(!form.name||!form.price) return alert('Vui lòng nhập tên món và giá bán.');
+  const [form,setForm] = useState(empty);
+  const [editing,setEditing] = useState(false);
+  const [recipeProduct,setRecipeProduct]=useState(null);
+  const [bulkMode,setBulkMode]=useState(false);
+  const [bulkRows,setBulkRows]=useState([]);
+  const [bulkSearch,setBulkSearch]=useState('');
+
+  function submit(e){
+    e.preventDefault();
+    if(!form.name||!form.price) return alert('Vui lòng nhập tên món và giá bán.');
     const item={...form,id:form.id||`p-${Date.now()}`,price:Number(form.price),cost:Number(form.cost||0),category:form.category||'Khác',recipe:form.recipe||[]};
-    setProducts(prev=>editing?prev.map(p=>p.id===item.id?item:p):[...prev,item]); setForm(empty); setEditing(false);
+    setProducts(prev=>editing?prev.map(p=>p.id===item.id?item:p):[...prev,item]);
+    setForm(empty); setEditing(false);
   }
   function edit(p){setForm({...p,recipe:p.recipe||[]});setEditing(true);window.scrollTo({top:0,behavior:'smooth'});}
   function toggle(id){setProducts(prev=>prev.map(p=>p.id===id?{...p,active:p.active===false?true:false}:p));}
   function saveRecipe(recipe){setProducts(prev=>prev.map(p=>p.id===recipeProduct.id?{...p,recipe}:p));setRecipeProduct(null);}
-  return <section className="screen"><button className="back" onClick={back}>← Quay lại</button><h2>Món & giá vốn</h2><p className="hint">Giá vốn có thể nhập trực tiếp. Nếu muốn tự trừ kho khi bán, thiết lập nguyên liệu sử dụng cho món.</p>
-    <form className="form-card" onSubmit={submit}><label>Tên món<input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Ví dụ: Trà Ổi" /></label><label>Danh mục<input value={form.category} onChange={e=>setForm({...form,category:e.target.value})} placeholder="Ví dụ: Trà trái cây" /></label><div className="form-grid-2"><label>Giá bán<input type="number" value={form.price} onChange={e=>setForm({...form,price:e.target.value})} /></label><label>Giá vốn<input type="number" value={form.cost} onChange={e=>setForm({...form,cost:e.target.value})} placeholder="Có thể nhập sau" /></label></div><button className="primary full">{editing?'Lưu thay đổi':'+ Thêm món'}</button>{editing&&<button type="button" className="secondary full" onClick={()=>{setForm(empty);setEditing(false)}}>Bỏ chỉnh sửa</button>}</form>
+
+  function openBulk(){
+    setBulkRows(products.map(p=>({
+      id:p.id,name:p.name,category:p.category||'Khác',
+      price:String(Number(p.price||0)),cost:String(Number(p.cost||0))
+    })));
+    setBulkSearch('');
+    setBulkMode(true);
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  function changeBulk(id,key,value){
+    setBulkRows(rows=>rows.map(r=>r.id===id?{...r,[key]:value}:r));
+  }
+  function dirtyCount(){
+    const byId=new Map(products.map(p=>[p.id,p]));
+    return bulkRows.filter(r=>{
+      const p=byId.get(r.id);
+      return p && (Number(r.price||0)!==Number(p.price||0)||Number(r.cost||0)!==Number(p.cost||0));
+    }).length;
+  }
+  function saveBulk(){
+    const invalid=bulkRows.find(r=>r.price===''||Number(r.price)<0||r.cost===''||Number(r.cost)<0);
+    if(invalid)return alert(`Kiểm tra lại giá của món: ${invalid.name}`);
+    const edits=new Map(bulkRows.map(r=>[r.id,{price:Number(r.price||0),cost:Number(r.cost||0)}]));
+    setProducts(prev=>prev.map(p=>edits.has(p.id)?{...p,...edits.get(p.id)}:p));
+    setBulkMode(false);
+    setBulkSearch('');
+  }
+
+  if(bulkMode){
+    const q=bulkSearch.trim().toLowerCase();
+    const shown=bulkRows.filter(r=>!q||r.name.toLowerCase().includes(q)||r.category.toLowerCase().includes(q));
+    const changed=dirtyCount();
+    return <section className="screen product-bulk-screen">
+      <div className="screen-head product-bulk-head">
+        <div>
+          <button className="back" onClick={()=>setBulkMode(false)}>← Món & giá vốn</button>
+          <h2>Sửa giá hàng loạt</h2>
+          <p>Nhập lại giá bán và giá vốn. Chỉ khi bấm <b>Lưu tất cả</b> dữ liệu mới được cập nhật.</p>
+        </div>
+        <div className="bulk-head-actions">
+          <span className={changed?'bulk-change-count active':'bulk-change-count'}>{changed} món thay đổi</span>
+          <button className="secondary small" onClick={()=>setBulkMode(false)}>Hủy</button>
+        </div>
+      </div>
+
+      <div className="card bulk-toolbar">
+        <input value={bulkSearch} onChange={e=>setBulkSearch(e.target.value)} placeholder="Tìm tên món hoặc danh mục…"/>
+        <span>{shown.length}/{bulkRows.length} món</span>
+      </div>
+
+      <div className="card bulk-price-card">
+        <div className="bulk-price-row bulk-price-table-head">
+          <span>Món</span><span>Giá bán</span><span>Giá vốn</span>
+        </div>
+        {shown.map(r=><div className="bulk-price-row" key={r.id}>
+          <div className="bulk-product-name"><strong>{r.name}</strong><small>{r.category}</small></div>
+          <label><span>Giá bán</span><input type="number" inputMode="numeric" min="0" step="1000" value={r.price} onChange={e=>changeBulk(r.id,'price',e.target.value)}/></label>
+          <label><span>Giá vốn</span><input type="number" inputMode="numeric" min="0" step="100" value={r.cost} onChange={e=>changeBulk(r.id,'cost',e.target.value)}/></label>
+        </div>)}
+      </div>
+
+      <div className="bulk-save-bar">
+        <div><strong>{changed} món đã chỉnh</strong><small>Các món chưa thay đổi sẽ được giữ nguyên.</small></div>
+        <button className="primary" onClick={saveBulk} disabled={!changed}>Lưu tất cả</button>
+      </div>
+    </section>
+  }
+
+  return <section className="screen">
+    <button className="back" onClick={back}>← Quay lại</button>
+    <div className="screen-head product-manager-head">
+      <div><h2>Món & giá vốn</h2><p className="hint">Sửa từng món như bình thường hoặc cập nhật giá toàn bộ menu trong một lần.</p></div>
+      <button className="bulk-edit-entry" onClick={openBulk}><span>✎</span><div><strong>Sửa giá hàng loạt</strong><small>{products.length} sản phẩm</small></div></button>
+    </div>
+
+    <form className="form-card" onSubmit={submit}>
+      <label>Tên món<input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Ví dụ: Trà Ổi" /></label>
+      <label>Danh mục<input value={form.category} onChange={e=>setForm({...form,category:e.target.value})} placeholder="Ví dụ: Trà trái cây" /></label>
+      <div className="form-grid-2">
+        <label>Giá bán<input type="number" value={form.price} onChange={e=>setForm({...form,price:e.target.value})} /></label>
+        <label>Giá vốn<input type="number" value={form.cost} onChange={e=>setForm({...form,cost:e.target.value})} placeholder="Có thể nhập sau" /></label>
+      </div>
+      <button className="primary full">{editing?'Lưu thay đổi':'+ Thêm món'}</button>
+      {editing&&<button type="button" className="secondary full" onClick={()=>{setForm(empty);setEditing(false)}}>Bỏ chỉnh sửa</button>}
+    </form>
+
     <div className="product-admin-list">{products.map(p=><div className="admin-row" key={p.id}><div><strong>{p.name}</strong><small>{p.category} · Bán {fmt(p.price)} · Vốn {fmt(p.cost)}</small><span className={p.active===false?'status cancel':'status'}>{p.active===false?'Đang ẩn':'Đang bán'}{p.recipe?.length?` · Trừ kho ${p.recipe.length} mục`:''}</span></div><div><button onClick={()=>setRecipeProduct(p)}>Trừ kho</button><button onClick={()=>edit(p)}>Sửa</button><button onClick={()=>toggle(p.id)}>{p.active===false?'Hiện':'Ẩn'}</button></div></div>)}</div>
-    {recipeProduct&&<RecipeModal product={recipeProduct} ingredients={ingredients} onClose={()=>setRecipeProduct(null)} onSave={saveRecipe}/>} 
+    {recipeProduct&&<RecipeModal product={recipeProduct} ingredients={ingredients} onClose={()=>setRecipeProduct(null)} onSave={saveRecipe}/>}
   </section>
 }
-
 function RecipeModal({product,ingredients,onClose,onSave}){
   const [rows,setRows]=useState(product.recipe?.length?product.recipe:[{ingredientId:'',qty:''}]);
   function change(i,key,value){setRows(v=>v.map((r,idx)=>idx===i?{...r,[key]:value}:r));}

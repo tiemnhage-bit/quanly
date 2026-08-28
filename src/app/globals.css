@@ -963,3 +963,46 @@ button:active{
   .admin-toolbar{padding:10px}
   .admin-toolbar>.secondary{width:100%}
 }
+
+
+/* ===== v0.23 bulk price editor ===== */
+.product-manager-head{align-items:flex-end}
+.bulk-edit-entry{display:flex;align-items:center;gap:9px;border:1px solid #fed7aa;background:#fff7ed;border-radius:14px;padding:10px 13px;color:#9a4c00;cursor:pointer;text-align:left}
+.bulk-edit-entry>span{width:31px;height:31px;display:grid;place-items:center;background:#ffead0;border-radius:10px;font-size:17px}
+.bulk-edit-entry>div{display:grid;gap:1px}
+.bulk-edit-entry strong{font-size:13px}
+.bulk-edit-entry small{font-size:10px;color:#b3671c}
+.product-bulk-head p{margin:4px 0 0;color:var(--muted);font-size:13px}
+.product-bulk-head .back{margin-bottom:6px}
+.bulk-head-actions{display:flex;gap:8px;align-items:center}
+.bulk-change-count{font-size:11px;font-weight:800;color:var(--muted);background:#eef0f3;border-radius:999px;padding:7px 9px}
+.bulk-change-count.active{color:#a45100;background:#fff3e3}
+.bulk-toolbar{display:flex;gap:12px;align-items:center;padding:10px 12px}
+.bulk-toolbar input{flex:1;min-width:0;border:1px solid var(--line);border-radius:11px;padding:10px 12px;background:#f9fafb}
+.bulk-toolbar span{font-size:11px;font-weight:800;color:var(--muted);white-space:nowrap}
+.bulk-price-card{padding:0;overflow:hidden}
+.bulk-price-row{display:grid;grid-template-columns:minmax(220px,1fr) 170px 170px;gap:12px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line)}
+.bulk-price-row:last-child{border-bottom:0}
+.bulk-price-table-head{background:#f8fafc;font-size:11px;font-weight:800;color:var(--muted);padding-top:9px;padding-bottom:9px}
+.bulk-product-name{display:grid;gap:2px;min-width:0}
+.bulk-product-name strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bulk-product-name small{color:var(--muted)}
+.bulk-price-row label{display:block}
+.bulk-price-row label>span{display:none}
+.bulk-price-row input{width:100%;border:1px solid #dfe3e8;border-radius:10px;padding:9px 10px;text-align:right;background:#fff;font-weight:700}
+.bulk-price-row input:focus{outline:none;border-color:#fb8c1b;box-shadow:0 0 0 3px rgba(251,140,27,.1)}
+.bulk-save-bar{position:sticky;bottom:72px;z-index:18;display:flex;justify-content:space-between;align-items:center;gap:14px;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);border:1px solid #fed7aa;box-shadow:0 -5px 24px rgba(17,24,39,.08);border-radius:16px;padding:11px 13px}
+.bulk-save-bar>div{display:grid}
+.bulk-save-bar small{color:var(--muted)}
+.bulk-save-bar button:disabled{opacity:.45}
+@media(max-width:650px){
+  .product-manager-head{display:grid;gap:10px}
+  .bulk-edit-entry{width:100%}
+  .product-bulk-head{display:grid;gap:10px}
+  .bulk-head-actions{justify-content:space-between}
+  .bulk-price-table-head{display:none}
+  .bulk-price-row{grid-template-columns:1fr 1fr;gap:8px 10px;padding:12px}
+  .bulk-product-name{grid-column:1/-1}
+  .bulk-price-row label>span{display:block;font-size:10px;font-weight:800;color:var(--muted);margin-bottom:4px}
+  .bulk-save-bar{bottom:70px}
+}
