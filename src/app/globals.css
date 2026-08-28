@@ -1029,17 +1029,3 @@ button:active{
   .admin-shop-metric{display:none}
   .admin-row-actions{grid-column:1/-1;justify-content:flex-start}
 }
-
-
-/* ===== v0.24.1 signup full shop info ===== */
-.signup-menu-block{display:grid;gap:8px;margin-top:2px}
-.signup-menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.signup-menu-option{display:grid;grid-template-columns:30px 1fr 18px;gap:8px;align-items:center;border:1px solid #e4e7ec;background:#fff;border-radius:12px;padding:10px;text-align:left;cursor:pointer;color:inherit}
-.signup-menu-option>span{font-size:18px}
-.signup-menu-option>div{display:grid;gap:2px}
-.signup-menu-option small{font-size:10px;color:var(--muted)}
-.signup-menu-option i{width:17px;height:17px;border:1px solid #d0d5dd;border-radius:50%;display:grid;place-items:center;font-size:10px;font-style:normal;color:#fff}
-.signup-menu-option.selected{border-color:#fb8c1b;background:#fff7ed}
-.signup-menu-option.selected i{background:#fb8c1b;border-color:#fb8c1b}
-.admin-shop-type{color:#7c2d12!important}
-@media(max-width:520px){.signup-menu-grid{grid-template-columns:1fr}}

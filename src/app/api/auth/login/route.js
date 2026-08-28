@@ -26,13 +26,19 @@ export async function POST(request){
     const admin=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false}});
     const {data:profile,error:profileError}=await admin
       .from('user_profiles')
-      .select('user_id')
+      .select('user_id,approval_status')
       .eq('phone',phone)
       .maybeSingle();
 
     if(profileError||!profile){
       return Response.json({error:'Sai số điện thoại hoặc mật khẩu.'},{status:401});
     }
+
+    const approval=profile.approval_status||'approved';
+    if(approval==='pending')return Response.json({error:'Tài khoản đang chờ Admin xét duyệt.',status:'pending'},{status:403});
+    if(approval==='rejected')return Response.json({error:'Quán không được duyệt.',status:'rejected'},{status:403});
+    if(approval==='suspended')return Response.json({error:'Quán đang tạm ngưng.',status:'suspended'},{status:403});
+    if(approval==='locked')return Response.json({error:'Tài khoản đã bị khóa.',status:'locked'},{status:403});
 
     const {data:userData,error:userError}=await admin.auth.admin.getUserById(profile.user_id);
     const authEmail=userData?.user?.email;
