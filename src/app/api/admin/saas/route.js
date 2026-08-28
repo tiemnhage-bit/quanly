@@ -136,10 +136,11 @@ export async function GET(request){
     }
 
     // overview
-    const [{data:shops,error:shopsError},{data:profiles,error:profilesError},{data:states,error:statesError}]=await Promise.all([
+    const [{data:shops,error:shopsError},{data:profiles,error:profilesError},{data:states,error:statesError},{data:activityRows}]=await Promise.all([
       admin.from('shops').select('id,code,name,phone,address,business_type,menu_preset,plan,status,owner_user_id,created_at,updated_at').order('created_at',{ascending:false}),
       admin.from('user_profiles').select('user_id,phone,email,approval_status,created_at'),
-      admin.from('app_states').select('shop_id,orders,updated_at')
+      admin.from('app_states').select('shop_id,orders,updated_at'),
+      admin.from('app_activity_daily').select('user_id,shop_id,activity_date,events').gte('activity_date',dateDaysAgo(29))
     ]);
     if(shopsError)throw shopsError;
     if(profilesError)throw profilesError;
@@ -151,6 +152,12 @@ export async function GET(request){
     const sevenDaysAgo=dateDaysAgo(6);
 
     let activeShops30=0,orders30=0,revenue30=0,newToday=0,new7=0,pendingShops=0;
+    const activityByUser=new Map();
+    for(const row of activityRows||[]){if(!activityByUser.has(row.user_id))activityByUser.set(row.user_id,new Set());activityByUser.get(row.user_id).add(row.activity_date);}
+    const activeUsers30=[...activityByUser.values()].filter(days=>days.size>0).length;
+    const activeUsers7=[...activityByUser.values()].filter(days=>[...days].some(d=>d>=sevenDaysAgo&&d<=today)).length;
+    const returning30=[...activityByUser.values()].filter(days=>days.size>=2).length;
+    const returning7=[...activityByUser.values()].filter(days=>[...days].filter(d=>d>=sevenDaysAgo&&d<=today).length>=2).length;
 
     const rows=(shops||[]).map(s=>{
       const p=profileByUser.get(s.owner_user_id)||{};
@@ -183,7 +190,8 @@ export async function GET(request){
         new_users_today:newToday,
         new_users_7d:new7,
         orders_30d:orders30,
-        revenue_30d:revenue30
+        revenue_30d:revenue30,
+        active_users_7d:activeUsers7,active_users_30d:activeUsers30,returning_users_7d:returning7,returning_users_30d:returning30,retention_7d:activeUsers7?Math.round(returning7/activeUsers7*100):0
       },
       shops:rows
     });
@@ -197,6 +205,15 @@ export async function POST(request){
   try{
     await requireAdmin(request);
     const body=await request.json();
+    if(body.action==='reset_password'){
+      if(!body.shopId||!body.password||String(body.password).length<6)return Response.json({error:'Thiếu quán hoặc mật khẩu tạm quá ngắn.'},{status:400});
+      const admin=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false}});
+      const {data:shop,error:shopError}=await admin.from('shops').select('id,owner_user_id').eq('id',body.shopId).maybeSingle();
+      if(shopError)throw shopError;if(!shop)return Response.json({error:'Không tìm thấy quán.'},{status:404});
+      const {error:updateError}=await admin.auth.admin.updateUserById(shop.owner_user_id,{password:String(body.password),user_metadata:{force_password_change:true}});
+      if(updateError)throw updateError;
+      return Response.json({ok:true});
+    }
     if(body.action!=='status')return Response.json({error:'Hành động không hợp lệ.'},{status:400});
     const allowed=['approved','active','rejected','suspended','locked'];
     if(!allowed.includes(body.status))return Response.json({error:'Trạng thái không hợp lệ.'},{status:400});

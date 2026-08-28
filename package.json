@@ -12,6 +12,7 @@
     "next": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "@supabase/supabase-js": "latest"
+    "@supabase/supabase-js": "latest",
+    "xlsx": "^0.18.5"
   }
 }
