@@ -864,3 +864,70 @@ button:active{
   .auth-card.saas-auth,.create-shop-card{width:min(100% - 24px,430px)}
   .shop-plan-card{grid-template-columns:1fr}
 }
+
+
+/* ===== v0.21 Admin SaaS ===== */
+.saas-admin-entry{width:100%;display:flex;align-items:center;justify-content:space-between;gap:14px;border:1px solid #fed7aa;background:linear-gradient(135deg,#fff7ed,#fff);border-radius:16px;padding:16px;margin:12px 0 16px;text-align:left;cursor:pointer;color:inherit}
+.saas-admin-entry>div{display:grid;gap:4px}
+.saas-admin-entry strong{font-size:16px}
+.saas-admin-entry small{color:var(--muted)}
+.saas-admin-entry>span:last-child{font-size:28px;color:#d66700}
+.saas-admin-kicker{font-size:10px;font-weight:900;letter-spacing:.09em;color:#d66700}
+.saas-admin-screen{padding-bottom:110px}
+.admin-stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0}
+.admin-stat{display:grid;gap:4px;min-height:116px;align-content:start}
+.admin-stat>span{font-size:11px;font-weight:800;color:var(--muted)}
+.admin-stat>strong{font-size:24px;line-height:1.15}
+.admin-stat>small{color:var(--muted)}
+.admin-stat-date{font-size:17px!important}
+.admin-toolbar{display:grid;grid-template-columns:minmax(220px,1fr) 180px auto;gap:10px;align-items:center;margin-bottom:12px}
+.admin-toolbar input,.admin-toolbar select{width:100%}
+.admin-shop-list{padding:0;overflow:hidden}
+.admin-shop-list-head{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px}
+.admin-shop-list-head small{color:var(--muted)}
+.admin-shop-row{width:100%;border:0;border-bottom:1px solid var(--line);background:#fff;display:grid;grid-template-columns:minmax(220px,1fr) 160px 145px 22px;gap:12px;align-items:center;padding:14px 16px;text-align:left;cursor:pointer;color:inherit}
+.admin-shop-row:last-child{border-bottom:0}
+.admin-shop-row:hover{background:#fffaf5}
+.admin-shop-main{display:grid;gap:5px;min-width:0}
+.admin-shop-main>div{display:flex;gap:8px;align-items:center;min-width:0}
+.admin-shop-main strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.admin-shop-main span{font-size:10px;font-weight:900;letter-spacing:.06em;background:#fff3e3;color:#a45100;border-radius:999px;padding:3px 6px;flex:0 0 auto}
+.admin-shop-main small{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.admin-shop-metric,.admin-shop-last{display:grid;gap:3px}
+.admin-shop-metric>span,.admin-shop-last>span{font-size:10px;font-weight:800;color:var(--muted)}
+.admin-shop-metric small,.admin-shop-last small{color:var(--muted)}
+.admin-shop-arrow{font-size:25px;color:#d66700;text-align:right}
+.admin-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+.admin-info-list,.admin-source-list{display:grid;gap:0}
+.admin-info-list>div,.admin-source-list>div{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.admin-info-list>div:last-child,.admin-source-list>div:last-child{border-bottom:0}
+.admin-info-list span,.admin-source-list>div>span{color:var(--muted)}
+.admin-source-list>div>div{display:grid;text-align:right}
+.admin-source-list small{color:var(--muted)}
+.admin-product-table{display:grid}
+.admin-table-row{display:grid;grid-template-columns:minmax(0,1fr) 90px 140px;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);align-items:center}
+.admin-table-row:last-child{border-bottom:0}
+.admin-table-head{font-size:11px;font-weight:800;color:var(--muted)}
+.admin-table-row>span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.admin-insight-card p{margin:0;color:var(--muted);line-height:1.55}
+.empty.compact{padding:10px 0}
+.admin-detail-head{align-items:flex-start}
+@media(max-width:860px){
+  .admin-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .admin-toolbar{grid-template-columns:1fr 150px}
+  .admin-toolbar .secondary{grid-column:1/-1}
+  .admin-shop-row{grid-template-columns:minmax(0,1fr) 120px 22px}
+  .admin-shop-last{display:none}
+}
+@media(max-width:560px){
+  .admin-stat-grid{grid-template-columns:1fr 1fr;gap:8px}
+  .admin-stat{min-height:102px;padding:12px}
+  .admin-stat>strong{font-size:20px}
+  .admin-toolbar{grid-template-columns:1fr}
+  .admin-toolbar .secondary{grid-column:auto}
+  .admin-shop-list-head{display:grid}
+  .admin-shop-row{grid-template-columns:minmax(0,1fr) 95px 16px;padding:12px}
+  .admin-shop-metric strong{font-size:13px}
+  .admin-detail-grid{grid-template-columns:1fr}
+  .admin-table-row{grid-template-columns:minmax(0,1fr) 50px 100px;font-size:13px}
+}

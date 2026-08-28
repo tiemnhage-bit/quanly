@@ -404,7 +404,7 @@ export default function NhaGeApp() {
   if (syncState === 'error' && !dataReady) return <SyncErrorScreen message={syncError} />;
 
   return <div className="app-shell">
-    <header className="topbar"><div><div className="brand">{shop?.name||'QUẢN LÝ QUÁN'}</div><div className="date">Free Beta · Bản 0.20.1 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn settings-btn" aria-label="Cài đặt" title="Cài đặt" onClick={() => setScreen('more')}>⚙</button></header>
+    <header className="topbar"><div><div className="brand">{shop?.name||'QUẢN LÝ QUÁN'}</div><div className="date">Free Beta · Bản 0.21 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn settings-btn" aria-label="Cài đặt" title="Cài đặt" onClick={() => setScreen('more')}>⚙</button></header>
     <main>
       <div className="page-transition" key={screen}>
       {role==='admin' && screen === 'home' && <Home todayRevenue={todayRevenue} dayOrders={dayOrders} todayQty={todayQty} cashToday={cashToday} bankToday={bankToday} knownCostToday={knownCostToday} ingredients={ingredients} closings={dayClosings} go={setScreen} openOrders={() => {setScreen('order');setOrderTab('list')}} />}
@@ -417,6 +417,7 @@ export default function NhaGeApp() {
       {role==='admin' && screen === 'closeDay' && <CloseDay orders={orders} receipts={stockReceipts} transactions={cashTransactions} closings={dayClosings} setClosings={setDayClosings} back={()=>setScreen('home')} />}
       {role==='admin' && screen === 'employees' && <EmployeeAccounts user={user} shop={shop} back={()=>setScreen('more')} />}
       {role==='admin' && screen === 'shopSettings' && <ShopSettings shop={shop} setShop={setShop} user={user} back={()=>setScreen('more')} />}
+      {role==='admin' && isSaasAdminUser(user) && screen === 'saasAdmin' && <SaasAdminDashboard user={user} back={()=>setScreen('more')} />}
       {screen === 'more' && <More role={role} memberInfo={memberInfo} shop={shop} go={setScreen} user={user} onSignOut={signOut} syncState={syncState} />}
       </div>
     </main>
@@ -449,6 +450,11 @@ function ownerPhoneLoginEmail(value=''){
 function displayOwnerPhone(value=''){
   const phone=normalizeOwnerPhone(value);
   return phone.startsWith('84') ? '0'+phone.slice(2) : phone;
+}
+
+function isSaasAdminUser(user){
+  return String(user?.email||'').toLowerCase()==='admin@tiemnhage.local'
+    || user?.user_metadata?.saas_admin===true;
 }
 
 function AuthScreen(){
@@ -659,7 +665,7 @@ function CreateShopScreen({user,onCreated,onSignOut}){
   </div></div>
 }
 function LoadingScreen({text}){ return <div className="auth-shell"><div className="auth-card center"><div className="spinner"></div><strong>{text}</strong></div></div> }
-function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.20.1 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
+function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.21 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
 function SyncErrorScreen({message}){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa tải được dữ liệu</h1><p>Hãy kiểm tra đã chạy file <b>supabase.sql</b> trong Supabase chưa.</p><div className="auth-message">{message}</div></div></div> }
 
 function Nav({active,icon,label,onClick}) { return <button className={'nav-item '+(active?'active':'')} onClick={onClick}><span>{icon}</span><small>{label}</small></button> }
@@ -1531,8 +1537,189 @@ function ShopSettings({shop,setShop,user,back}){
     </form>
   </section>
 }
+
+function SaasAdminDashboard({user,back}){
+  const [loading,setLoading]=useState(true);
+  const [error,setError]=useState('');
+  const [summary,setSummary]=useState(null);
+  const [shops,setShops]=useState([]);
+  const [search,setSearch]=useState('');
+  const [activity,setActivity]=useState('all');
+  const [selectedShop,setSelectedShop]=useState(null);
+  const [detail,setDetail]=useState(null);
+  const [detailLoading,setDetailLoading]=useState(false);
+
+  async function adminFetch(params=''){
+    const {data:{session}}=await supabase.auth.getSession();
+    const res=await fetch(`/api/admin/saas${params}`,{
+      headers:{'Authorization':`Bearer ${session?.access_token||''}`}
+    });
+    const body=await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(body.error||'Không tải được dữ liệu Admin.');
+    return body;
+  }
+
+  async function loadOverview(){
+    setLoading(true); setError('');
+    try{
+      const data=await adminFetch('?action=overview');
+      setSummary(data.summary||null);
+      setShops(data.shops||[]);
+    }catch(e){setError(e.message);}
+    setLoading(false);
+  }
+
+  useEffect(()=>{loadOverview();},[]);
+
+  async function openShop(shopRow){
+    setSelectedShop(shopRow);
+    setDetail(null);
+    setDetailLoading(true);
+    try{
+      const data=await adminFetch(`?action=shop&shopId=${encodeURIComponent(shopRow.id)}`);
+      setDetail(data);
+    }catch(e){
+      alert(e.message);
+      setSelectedShop(null);
+    }
+    setDetailLoading(false);
+  }
+
+  const filtered=shops.filter(s=>{
+    const q=search.trim().toLowerCase();
+    const matchesSearch=!q || [
+      s.name,s.code,s.phone,s.email,s.owner_phone
+    ].some(v=>String(v||'').toLowerCase().includes(q));
+    if(!matchesSearch)return false;
+    if(activity==='active')return Number(s.orders_30d||0)>0;
+    if(activity==='inactive')return Number(s.orders_30d||0)===0;
+    return true;
+  });
+
+  function money(n){return `${Math.round(Number(n||0)).toLocaleString('vi-VN')}đ`;}
+  function shortDate(v){
+    if(!v)return '—';
+    const d=new Date(v);
+    if(Number.isNaN(d.getTime()))return String(v);
+    return new Intl.DateTimeFormat('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric'}).format(d);
+  }
+
+  function exportCsv(){
+    const rows=[
+      ['Mã quán','Tên quán','SĐT','Email','Ngày đăng ký','Đơn 30 ngày','Doanh thu 30 ngày','Tổng đơn','Tổng doanh thu','Cập nhật cuối'],
+      ...filtered.map(s=>[
+        s.code||'',s.name||'',displayOwnerPhone(s.owner_phone||s.phone||''),s.email||'',
+        shortDate(s.created_at),s.orders_30d||0,s.revenue_30d||0,s.total_orders||0,s.total_revenue||0,s.updated_at||''
+      ])
+    ];
+    const csv='\ufeff'+rows.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download=`saas-users-${todayISO()}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  if(selectedShop){
+    return <section className="screen saas-admin-screen">
+      <div className="screen-head admin-detail-head">
+        <div><div className="saas-admin-kicker">ADMIN · VIEW ONLY</div><h2>{selectedShop.name}</h2><p>Mã quán {selectedShop.code} · {displayOwnerPhone(selectedShop.owner_phone||'')||'Chưa có SĐT'}</p></div>
+        <button className="secondary small" onClick={()=>{setSelectedShop(null);setDetail(null)}}>← Danh sách quán</button>
+      </div>
+
+      {detailLoading&&<div className="card empty">Đang tải dữ liệu quán…</div>}
+      {!detailLoading&&detail&&<>
+        <div className="admin-stat-grid">
+          <div className="card admin-stat"><span>Hôm nay</span><strong>{money(detail.today?.revenue)}</strong><small>{detail.today?.orders||0} đơn</small></div>
+          <div className="card admin-stat"><span>30 ngày</span><strong>{money(detail.last30?.revenue)}</strong><small>{detail.last30?.orders||0} đơn</small></div>
+          <div className="card admin-stat"><span>Toàn thời gian</span><strong>{money(detail.allTime?.revenue)}</strong><small>{detail.allTime?.orders||0} đơn</small></div>
+          <div className="card admin-stat"><span>Cập nhật cuối</span><strong className="admin-stat-date">{detail.shop?.updated_at?shortDate(detail.shop.updated_at):'—'}</strong><small>{detail.active_days_30d||0} ngày có đơn / 30 ngày</small></div>
+        </div>
+
+        <div className="admin-detail-grid">
+          <div className="card">
+            <div className="section-title">Thông tin chủ quán</div>
+            <div className="admin-info-list">
+              <div><span>SĐT</span><strong>{displayOwnerPhone(detail.profile?.phone||'')||'—'}</strong></div>
+              <div><span>Email</span><strong>{detail.profile?.email||'—'}</strong></div>
+              <div><span>Ngày đăng ký</span><strong>{shortDate(detail.shop?.created_at)}</strong></div>
+              <div><span>Gói</span><strong>{String(detail.shop?.plan||'free').toUpperCase()}</strong></div>
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="section-title">Nguồn đơn · 30 ngày</div>
+            <div className="admin-source-list">
+              {(detail.sources||[]).length===0&&<div className="empty compact">Chưa có dữ liệu.</div>}
+              {(detail.sources||[]).map(x=><div key={x.source}><span>{x.source}</span><div><strong>{x.orders} đơn</strong><small>{money(x.revenue)}</small></div></div>)}
+            </div>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="section-title">Món bán chạy · 30 ngày</div>
+          {(detail.top_products||[]).length===0?<div className="empty">Chưa có đơn trong 30 ngày.</div>:
+          <div className="admin-product-table">
+            <div className="admin-table-row admin-table-head"><span>Món</span><span>SL</span><span>Doanh thu</span></div>
+            {detail.top_products.map((p,i)=><div className="admin-table-row" key={`${p.name}-${i}`}><span><b>{i+1}.</b> {p.name}</span><strong>{p.qty}</strong><strong>{money(p.revenue)}</strong></div>)}
+          </div>}
+        </div>
+
+        <div className="card admin-insight-card">
+          <div className="section-title">Tư liệu nghiên cứu</div>
+          <p>Dashboard này chỉ đọc. Khi dùng số liệu của quán cho quảng cáo/case study, nên ẩn danh hoặc xin phép chủ quán trước khi dùng tên, logo hay số liệu nhận diện cụ thể.</p>
+        </div>
+      </>}
+    </section>
+  }
+
+  return <section className="screen saas-admin-screen">
+    <div className="screen-head">
+      <div><div className="saas-admin-kicker">QUẢN TRỊ HỆ THỐNG</div><h2>Admin SaaS</h2><p>Theo dõi đăng ký và mức độ sử dụng Free Beta.</p></div>
+      <button className="secondary small" onClick={back}>← Cài đặt</button>
+    </div>
+
+    {loading&&<div className="card empty">Đang tải dữ liệu hệ thống…</div>}
+    {error&&<div className="card auth-message">{error}<button className="secondary small" onClick={loadOverview}>Thử lại</button></div>}
+
+    {!loading&&!error&&<>
+      <div className="admin-stat-grid">
+        <div className="card admin-stat"><span>Tổng user</span><strong>{summary?.total_users||0}</strong><small>chủ quán đã đăng ký</small></div>
+        <div className="card admin-stat"><span>Tổng quán</span><strong>{summary?.total_shops||0}</strong><small>{summary?.active_shops_30d||0} quán có đơn 30 ngày</small></div>
+        <div className="card admin-stat"><span>User mới · 7 ngày</span><strong>{summary?.new_users_7d||0}</strong><small>{summary?.new_users_today||0} đăng ký hôm nay</small></div>
+        <div className="card admin-stat"><span>GMV · 30 ngày</span><strong>{money(summary?.revenue_30d)}</strong><small>{summary?.orders_30d||0} đơn</small></div>
+      </div>
+
+      <div className="card admin-toolbar">
+        <div className="admin-search-wrap"><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Tìm SĐT, email, tên quán, mã quán…"/></div>
+        <select value={activity} onChange={e=>setActivity(e.target.value)}>
+          <option value="all">Tất cả quán</option>
+          <option value="active">Có đơn 30 ngày</option>
+          <option value="inactive">Chưa có đơn 30 ngày</option>
+        </select>
+        <button className="secondary" onClick={exportCsv}>Xuất CSV</button>
+      </div>
+
+      <div className="card admin-shop-list">
+        <div className="admin-shop-list-head"><strong>{filtered.length} quán</strong><small>Bấm quán để xem tình hình kinh doanh · chỉ đọc</small></div>
+        {!filtered.length&&<div className="empty">Không có kết quả phù hợp.</div>}
+        {filtered.map(s=><button className="admin-shop-row" key={s.id} onClick={()=>openShop(s)}>
+          <div className="admin-shop-main">
+            <div><strong>{s.name}</strong><span>{s.code}</span></div>
+            <small>{displayOwnerPhone(s.owner_phone||s.phone||'')||'Chưa có SĐT'}{s.email?` · ${s.email}`:''}</small>
+          </div>
+          <div className="admin-shop-metric"><span>30 ngày</span><strong>{money(s.revenue_30d)}</strong><small>{s.orders_30d||0} đơn</small></div>
+          <div className="admin-shop-last"><span>Đăng ký</span><strong>{shortDate(s.created_at)}</strong><small>{s.orders_30d>0?'Đang dùng':'Chưa phát sinh đơn'}</small></div>
+          <span className="admin-shop-arrow">›</span>
+        </button>)}
+      </div>
+    </>}
+  </section>
+}
+
 function More({go,user,onSignOut,syncState,role='admin',memberInfo=null,shop=null}){
   const isAdmin=role==='admin';
+  const isSaasAdmin=isAdmin&&isSaasAdminUser(user);
   return <section className="screen">
     <h2>{isAdmin?'Cài đặt':'Tài khoản'}</h2>
     <div className="card account-card">
@@ -1543,6 +1730,12 @@ function More({go,user,onSignOut,syncState,role='admin',memberInfo=null,shop=nul
       </div>
       <button className="secondary" onClick={onSignOut}>Đăng xuất</button>
     </div>
+
+    {isSaasAdmin&&<button className="saas-admin-entry" onClick={()=>go('saasAdmin')}>
+      <div><span className="saas-admin-kicker">QUẢN TRỊ HỆ THỐNG</span><strong>Admin SaaS Dashboard</strong><small>User · Quán · Doanh thu · Mức độ sử dụng</small></div>
+      <span>›</span>
+    </button>}
+
     {isAdmin&&<div className="report-menu">
       <button onClick={()=>go('shopSettings')}>Thông tin quán & tài khoản <span>›</span></button>
       <button onClick={()=>go('employees')}>Tài khoản nhân viên <span>›</span></button>
@@ -1553,3 +1746,4 @@ function More({go,user,onSignOut,syncState,role='admin',memberInfo=null,shop=nul
     </div>}
   </section>
 }
+
