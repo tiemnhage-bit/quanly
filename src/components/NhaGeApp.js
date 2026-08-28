@@ -21,6 +21,7 @@ export default function NhaGeApp() {
   const [memberInfo,setMemberInfo] = useState(null);
   const [pendingApprovals,setPendingApprovals] = useState([]);
   const [showApprovalNotice,setShowApprovalNotice] = useState(false);
+  const [blockedStatus,setBlockedStatus] = useState(null);
   const approvalSeenRef = useRef(new Set());
   const [authLoading, setAuthLoading] = useState(true);
   const [dataReady, setDataReady] = useState(false);
@@ -138,11 +139,19 @@ export default function NhaGeApp() {
         return;
       }
 
-      if (activeShop.status === 'inactive') {
+      const blockedMap={
+        pending:'pending',
+        rejected:'rejected',
+        suspended:'suspended',
+        locked:'locked',
+        inactive:'suspended'
+      };
+      if (blockedMap[activeShop.status]) {
+        setBlockedStatus(blockedMap[activeShop.status]);
         await supabase.auth.signOut();
-        alert('Quán này đang tạm ngưng hoạt động.');
         return;
       }
+      setBlockedStatus(null);
 
       setShop(activeShop);
       setDataOwnerId(ownerId);
@@ -439,13 +448,14 @@ export default function NhaGeApp() {
     };
   },[user?.id]);
 
+  if (blockedStatus) return <BlockedShopScreen status={blockedStatus} onBack={()=>setBlockedStatus(null)} />;
   if (!user) return <AuthScreen />;
   if (needsShopSetup) return <CreateShopScreen user={user} onCreated={()=>window.location.reload()} onSignOut={signOut} />;
   if (!dataReady && syncState !== 'error') return <LoadingScreen text="Đang tải dữ liệu quán…" />;
   if (syncState === 'error' && !dataReady) return <SyncErrorScreen message={syncError} />;
 
   return <div className="app-shell">
-    <header className="topbar"><div><div className="brand">{shop?.name||'QUẢN LÝ QUÁN'}</div><div className="date">Free Beta · Bản 0.24.2 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn settings-btn admin-settings-wrap" aria-label="Cài đặt" title="Cài đặt" onClick={() => setScreen('more')}>⚙{isSaasAdminUser(user)&&pendingApprovals.length>0&&<span className="admin-pending-badge">{pendingApprovals.length}</span>}</button></header>
+    <header className="topbar"><div><div className="brand">{shop?.name||'QUẢN LÝ QUÁN'}</div><div className="date">Free Beta · Bản 0.24.3 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn settings-btn admin-settings-wrap" aria-label="Cài đặt" title="Cài đặt" onClick={() => setScreen('more')}>⚙{isSaasAdminUser(user)&&pendingApprovals.length>0&&<span className="admin-pending-badge">{pendingApprovals.length}</span>}</button></header>
     <main>
       <div className="page-transition" key={screen}>
       {role==='admin' && screen === 'home' && <Home todayRevenue={todayRevenue} dayOrders={dayOrders} todayQty={todayQty} cashToday={cashToday} bankToday={bankToday} knownCostToday={knownCostToday} ingredients={ingredients} closings={dayClosings} go={setScreen} openOrders={() => {setScreen('order');setOrderTab('list')}} />}
@@ -512,6 +522,42 @@ function isSaasAdminUser(user){
     || user?.user_metadata?.saas_admin===true;
 }
 
+
+function BlockedShopScreen({status,onBack}){
+  const config={
+    pending:{
+      icon:'⏳',
+      title:'Đang chờ xét duyệt',
+      text:'Đăng ký của bạn đã được ghi nhận và đang chờ Admin xét duyệt.'
+    },
+    rejected:{
+      icon:'!',
+      title:'Quán không được duyệt',
+      text:'Đăng ký này chưa được Admin chấp thuận. Nếu cần kiểm tra lại, hãy liên hệ Admin.'
+    },
+    suspended:{
+      icon:'Ⅱ',
+      title:'Quán đang tạm ngưng',
+      text:'Quán đang bị tạm ngưng sử dụng. Vui lòng liên hệ Admin để được hỗ trợ.'
+    },
+    locked:{
+      icon:'🔒',
+      title:'Quán đã bị khóa',
+      text:'Tài khoản/quán đã bị khóa do trạng thái quản trị. Vui lòng liên hệ Admin để được hỗ trợ.'
+    }
+  };
+  const c=config[status]||config.locked;
+  return <div className="auth-shell"><div className="auth-card blocked-shop-card">
+    <div className={`blocked-icon ${status}`}>{c.icon}</div>
+    <h1>{c.title}</h1>
+    <p>{c.text}</p>
+    {(status==='locked'||status==='suspended'||status==='rejected')&&
+      <a className="zalo-support-btn" href="https://zalo.me/0332995337" target="_blank" rel="noreferrer">Nhắn Admin qua Zalo</a>
+    }
+    <button className="secondary full" onClick={onBack}>Về màn đăng nhập</button>
+  </div></div>
+}
+
 function AuthScreen(){
   const [mode,setMode]=useState('owner');
   const [ownerMode,setOwnerMode]=useState('login');
@@ -527,6 +573,7 @@ function AuthScreen(){
   const [busy,setBusy]=useState(false);
   const [message,setMessage]=useState('');
   const [messageOk,setMessageOk]=useState(false);
+  const [loginStatus,setLoginStatus]=useState('');
 
   function validPhone(){
     const p=normalizeOwnerPhone(phone);
@@ -534,7 +581,7 @@ function AuthScreen(){
   }
 
   async function loginOwner(e){
-    e.preventDefault(); setBusy(true); setMessage(''); setMessageOk(false);
+    e.preventDefault(); setBusy(true); setMessage(''); setMessageOk(false); setLoginStatus('');
     const raw=String(phone||'').trim();
 
     // Giữ tương thích tài khoản Admin cũ của Nhà Gé.
@@ -558,10 +605,10 @@ function AuthScreen(){
       const data=await res.json().catch(()=>({}));
       if(!res.ok){
         setBusy(false);
-        if(data.status==='pending') setMessage('Đăng ký thành công. Tài khoản đang chờ Admin xét duyệt.');
-        else if(data.status==='rejected') setMessage('Quán của bạn không được duyệt. Vui lòng liên hệ Admin nếu cần hỗ trợ.');
-        else if(data.status==='suspended') setMessage('Quán đang tạm ngưng. Vui lòng liên hệ Admin.');
-        else if(data.status==='locked') setMessage('Tài khoản đã bị khóa. Vui lòng liên hệ Admin.');
+        if(data.status==='pending'){setLoginStatus('pending');setMessage('Đăng ký thành công. Tài khoản đang chờ Admin xét duyệt.');}
+        else if(data.status==='rejected'){setLoginStatus('rejected');setMessage('Quán của bạn không được duyệt. Vui lòng liên hệ Admin nếu cần hỗ trợ.');}
+        else if(data.status==='suspended'){setLoginStatus('suspended');setMessage('Quán đang tạm ngưng. Vui lòng liên hệ Admin.');}
+        else if(data.status==='locked'){setLoginStatus('locked');setMessage('Tài khoản đã bị khóa. Vui lòng liên hệ Admin.');}
         else setMessage(data.error||'Sai số điện thoại hoặc mật khẩu.');
         return;
       }
@@ -715,6 +762,7 @@ function AuthScreen(){
         </label>
 
         {message&&<div className={'auth-message '+(messageOk?'ok':'')}>{message}</div>}
+        {['rejected','suspended','locked'].includes(loginStatus)&&<a className="zalo-support-btn compact" href="https://zalo.me/0332995337" target="_blank" rel="noreferrer">Liên hệ Admin qua Zalo</a>}
         <button className="primary full" disabled={busy}>
           {busy?'Đang xử lý…':ownerMode==='signup'?'Tạo tài khoản Free':'Đăng nhập'}
         </button>
@@ -865,7 +913,7 @@ function CreateShopScreen({user,onCreated,onSignOut}){
   </div></div>
 }
 function LoadingScreen({text}){ return <div className="auth-shell"><div className="auth-card center"><div className="spinner"></div><strong>{text}</strong></div></div> }
-function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.24.2 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
+function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.24.3 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
 function SyncErrorScreen({message}){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa tải được dữ liệu</h1><p>Hãy kiểm tra đã chạy file <b>supabase.sql</b> trong Supabase chưa.</p><div className="auth-message">{message}</div></div></div> }
 
 function Nav({active,icon,label,onClick}) { return <button className={'nav-item '+(active?'active':'')} onClick={onClick}><span>{icon}</span><small>{label}</small></button> }

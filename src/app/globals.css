@@ -1060,3 +1060,15 @@ button:active{
   .approval-notice-actions{display:grid;grid-template-columns:1fr 1fr}
   .approval-notice-actions button{width:100%}
 }
+
+
+/* ===== v0.24.3 hard block suspended/locked shops ===== */
+.blocked-shop-card{max-width:430px;text-align:center}
+.blocked-icon{width:58px;height:58px;margin:0 auto 10px;display:grid;place-items:center;border-radius:18px;font-size:24px;font-weight:900}
+.blocked-icon.pending{background:#fff7ed;color:#b54708}
+.blocked-icon.rejected,.blocked-icon.locked{background:#fff1f0;color:#b42318}
+.blocked-icon.suspended{background:#f4f3ff;color:#6941c6}
+.blocked-shop-card h1{margin-bottom:7px}
+.blocked-shop-card p{color:var(--muted);line-height:1.55;margin-bottom:16px}
+.zalo-support-btn{display:flex;align-items:center;justify-content:center;width:100%;min-height:45px;border-radius:12px;background:#0877d1;color:#fff;text-decoration:none;font-weight:800;margin:0 0 9px}
+.zalo-support-btn.compact{min-height:40px;margin-top:8px;font-size:13px}
