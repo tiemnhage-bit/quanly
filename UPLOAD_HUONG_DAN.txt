@@ -1,0 +1,17 @@
+UPLOAD BỘ FULL v0.24.3
+
+1. Trong GitHub repo, giữ repo nhưng xóa toàn bộ file/folder cũ.
+2. Giải nén file ZIP này.
+3. Upload TOÀN BỘ NỘI DUNG bên trong thư mục quanly-v0243-full lên ROOT repo.
+   Root phải có: package.json, jsconfig.json, src/, README.md, supabase.sql...
+4. KHÔNG upload nguyên folder quanly-v0243-full thành một folder con.
+5. Chờ Vercel deploy. Header app phải hiện: Bản 0.24.3.
+6. Nếu chưa chạy migration v0.24/v0.24.1, chạy MIGRATION_v0243.sql trên Supabase.
+
+Cấu trúc quan trọng:
+src/app/page.js
+src/app/layout.js
+src/app/globals.css
+src/app/api/...
+src/components/NhaGeApp.js
+src/lib/...

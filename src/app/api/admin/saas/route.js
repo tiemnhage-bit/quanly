@@ -110,7 +110,7 @@ export async function GET(request){
 
       const {data:shop,error:shopError}=await admin
         .from('shops')
-        .select('id,code,name,phone,address,plan,status,owner_user_id,created_at,updated_at')
+        .select('id,code,name,phone,address,business_type,menu_preset,plan,status,owner_user_id,created_at,updated_at')
         .eq('id',shopId)
         .maybeSingle();
       if(shopError)throw shopError;
@@ -137,7 +137,7 @@ export async function GET(request){
 
     // overview
     const [{data:shops,error:shopsError},{data:profiles,error:profilesError},{data:states,error:statesError}]=await Promise.all([
-      admin.from('shops').select('id,code,name,phone,address,plan,status,owner_user_id,created_at,updated_at').order('created_at',{ascending:false}),
+      admin.from('shops').select('id,code,name,phone,address,business_type,menu_preset,plan,status,owner_user_id,created_at,updated_at').order('created_at',{ascending:false}),
       admin.from('user_profiles').select('user_id,phone,email,approval_status,created_at'),
       admin.from('app_states').select('shop_id,orders,updated_at')
     ]);
@@ -167,6 +167,7 @@ export async function GET(request){
 
       return {
         id:s.id,code:s.code,name:s.name,phone:s.phone,email:p.email||null,owner_phone:p.phone||null,
+        address:s.address||null,business_type:s.business_type||null,menu_preset:s.menu_preset||null,
         plan:s.plan,status:p.approval_status||s.status||'active',created_at:s.created_at,updated_at:st.updated_at||s.updated_at,
         total_orders:metrics.total_orders,total_revenue:metrics.total_revenue,
         orders_30d:metrics.orders_30d,revenue_30d:metrics.revenue_30d

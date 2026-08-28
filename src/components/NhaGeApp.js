@@ -1786,7 +1786,7 @@ function EmployeeAccounts({user,shop,back}){
       .order('created_at',{ascending:true});
     if(error) alert(error.message);
     setEmployees(data||[]);
-    if(!silent)setLoading(false);
+    setLoading(false);
   }
   useEffect(()=>{load();},[shop?.id]);
 
@@ -1908,7 +1908,7 @@ function SaasAdminDashboard({user,back}){
       setSummary(data.summary||null);
       setShops(data.shops||[]);
     }catch(e){setError(e.message);}
-    setLoading(false);
+    if(!silent)setLoading(false);
   }
 
   useEffect(()=>{
