@@ -1029,3 +1029,34 @@ button:active{
   .admin-shop-metric{display:none}
   .admin-row-actions{grid-column:1/-1;justify-content:flex-start}
 }
+
+
+/* ===== v0.24.1 signup full shop info ===== */
+.signup-menu-block{display:grid;gap:8px;margin-top:2px}
+.signup-menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.signup-menu-option{display:grid;grid-template-columns:30px 1fr 18px;gap:8px;align-items:center;border:1px solid #e4e7ec;background:#fff;border-radius:12px;padding:10px;text-align:left;cursor:pointer;color:inherit}
+.signup-menu-option>span{font-size:18px}
+.signup-menu-option>div{display:grid;gap:2px}
+.signup-menu-option small{font-size:10px;color:var(--muted)}
+.signup-menu-option i{width:17px;height:17px;border:1px solid #d0d5dd;border-radius:50%;display:grid;place-items:center;font-size:10px;font-style:normal;color:#fff}
+.signup-menu-option.selected{border-color:#fb8c1b;background:#fff7ed}
+.signup-menu-option.selected i{background:#fb8c1b;border-color:#fb8c1b}
+.admin-shop-type{color:#7c2d12!important}
+@media(max-width:520px){.signup-menu-grid{grid-template-columns:1fr}}
+
+
+/* ===== v0.24.2 realtime-ish admin approval notice ===== */
+.admin-settings-wrap{position:relative}
+.admin-pending-badge{position:absolute;top:-6px;right:-6px;min-width:19px;height:19px;padding:0 5px;display:grid;place-items:center;border-radius:999px;background:#d92d20;color:#fff;border:2px solid #fff;font-size:10px;font-weight:900;line-height:1}
+.inline-pending-count{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;margin-left:5px;border-radius:999px;background:#d92d20;color:#fff;font-size:10px;vertical-align:middle}
+.approval-notice-backdrop{position:fixed;inset:0;z-index:9999;background:rgba(17,24,39,.35);display:grid;place-items:center;padding:18px;backdrop-filter:blur(3px)}
+.approval-notice-card{width:min(460px,100%);background:#fff;border:1px solid #fed7aa;border-radius:20px;padding:20px;box-shadow:0 24px 70px rgba(17,24,39,.22);display:grid;grid-template-columns:48px minmax(0,1fr);gap:12px}
+.approval-notice-icon{width:46px;height:46px;display:grid;place-items:center;border-radius:14px;background:#fff3e3;font-size:22px}
+.approval-notice-card h3{margin:2px 0 5px;font-size:20px}
+.approval-notice-card p{margin:0;color:var(--muted);line-height:1.45}
+.approval-notice-actions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px;margin-top:6px}
+@media(max-width:520px){
+  .approval-notice-card{grid-template-columns:42px minmax(0,1fr);padding:16px}
+  .approval-notice-actions{display:grid;grid-template-columns:1fr 1fr}
+  .approval-notice-actions button{width:100%}
+}
