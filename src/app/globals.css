@@ -1120,3 +1120,27 @@ button:active{
   .category-manager-head{display:grid}
   .category-delete-list{grid-template-columns:1fr}
 }
+
+
+/* ===== v0.24.7 category scope + per-product stock qty ===== */
+.stock-set-config.single{grid-template-columns:1fr}
+.stock-set-config.single .stock-set-tip{grid-column:auto}
+.stock-set-product-row{display:grid;grid-template-columns:minmax(0,1fr) 190px;gap:12px;align-items:center;padding:10px 13px;border-bottom:1px solid var(--line)}
+.stock-set-product-row:last-child{border-bottom:0}
+.stock-set-product-row.selected{background:#f0fdf4}
+.stock-set-check{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;align-items:center;cursor:pointer}
+.stock-set-check input{width:18px;height:18px;accent-color:#16a34a}
+.stock-set-check>div{display:grid;gap:2px}
+.stock-set-check small{color:var(--muted)}
+.stock-row-qty{display:grid;gap:4px}
+.stock-row-qty>span{font-size:10px;font-weight:800;color:var(--muted)}
+.stock-row-qty>div{display:grid;grid-template-columns:1fr auto;align-items:center;border:1px solid #dfe3e8;border-radius:10px;overflow:hidden;background:#fff}
+.stock-row-qty input{width:100%;border:0;padding:9px 10px;text-align:right;outline:none;font-weight:700}
+.stock-row-qty b{padding:0 10px;color:#667085;font-size:11px}
+.category-crud-actions{display:flex;gap:4px}
+.category-crud-actions button{border:0;background:#fff;color:#475467;border-radius:7px;padding:5px 7px;font-size:10px;font-weight:800;cursor:pointer}
+.category-crud-actions button.danger{color:#b42318;background:#fff1f0}
+@media(max-width:650px){
+  .stock-set-product-row{grid-template-columns:1fr}
+  .stock-row-qty{padding-left:32px}
+}

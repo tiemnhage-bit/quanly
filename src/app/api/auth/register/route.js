@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import crypto from 'crypto';
+import { randomBytes, randomUUID } from 'crypto';
 
 const url=process.env.NEXT_PUBLIC_SUPABASE_URL;
 const service=process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -60,7 +60,7 @@ function starterProducts(key){
 
 async function uniqueCode(admin){
   for(let i=0;i<20;i++){
-    const code=crypto.randomBytes(3).toString('hex').toUpperCase();
+    const code=randomBytes(3).toString('hex').toUpperCase();
     const {data}=await admin.from('shops').select('id').eq('code',code).maybeSingle();
     if(!data)return code;
   }
@@ -96,7 +96,7 @@ export async function POST(request){
       if(emailProfile)return Response.json({error:'Email này đã được sử dụng.'},{status:409});
     }
 
-    const loginEmail=`u-${crypto.randomUUID()}@users.quanlyquan.local`;
+    const loginEmail=`u-${randomUUID()}@users.quanlyquan.local`;
     const {data:created,error:createError}=await admin.auth.admin.createUser({
       email:loginEmail,password,email_confirm:true,
       user_metadata:{phone,contact_email:optionalEmail,role:'owner'}
@@ -126,6 +126,7 @@ export async function POST(request){
       user_id:createdUserId,
       shop_id:shop.id,
       products:starterProducts(menuPreset),
+      product_categories:[...new Set((STARTER_MENUS[menuPreset]||[]).map(row=>row[0]).filter(Boolean))],
       orders:[],
       ingredients:[],
       stock_receipts:[],
