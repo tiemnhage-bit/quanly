@@ -207,13 +207,20 @@ export async function POST(request){
     if(shopError)throw shopError;
     if(!shop)return Response.json({error:'Không tìm thấy quán.'},{status:404});
 
+    const profileStatus=body.status==='active'?'approved':body.status;
+    const shopStatus=['approved','active'].includes(body.status)?'active':body.status;
+
     const {error:profileError}=await admin.from('user_profiles')
-      .update({approval_status:body.status,updated_at:new Date().toISOString()})
+      .update({approval_status:profileStatus,updated_at:new Date().toISOString()})
       .eq('user_id',shop.owner_user_id);
     if(profileError)throw profileError;
 
-    await admin.from('shops').update({status:body.status,updated_at:new Date().toISOString()}).eq('id',shop.id);
-    return Response.json({ok:true,status:body.status});
+    const {error:shopUpdateError}=await admin.from('shops')
+      .update({status:shopStatus,updated_at:new Date().toISOString()})
+      .eq('id',shop.id);
+    if(shopUpdateError)throw shopUpdateError;
+
+    return Response.json({ok:true,status:profileStatus,shop_status:shopStatus});
   }catch(e){
     return Response.json({error:e?.message||'Không cập nhật được trạng thái.'},{status:e?.status||500});
   }
