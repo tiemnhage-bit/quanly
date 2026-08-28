@@ -1006,3 +1006,40 @@ button:active{
   .bulk-price-row label>span{display:block;font-size:10px;font-weight:800;color:var(--muted);margin-bottom:4px}
   .bulk-save-bar{bottom:70px}
 }
+
+
+/* ===== v0.24 approval + account controls ===== */
+.forgot-zalo{display:block;text-align:center;margin-top:9px;font-size:12px;font-weight:700;color:#0877d1;text-decoration:none}
+.forgot-zalo:hover{text-decoration:underline}
+.admin-shop-row{grid-template-columns:minmax(210px,1fr) 140px 130px minmax(150px,auto) 18px}
+.admin-row-actions{display:flex;gap:5px;justify-content:flex-end;flex-wrap:wrap}
+.admin-row-actions button{border:1px solid #d9dde3;background:#fff;border-radius:9px;padding:6px 8px;font-size:10px;font-weight:800;cursor:pointer;white-space:nowrap}
+.admin-row-actions button.approve{background:#ecfdf3;border-color:#a6f4c5;color:#067647}
+.admin-row-actions button.danger{background:#fff1f0;border-color:#fecdca;color:#b42318}
+.shop-status{font-weight:800}
+.shop-status.pending{color:#b54708}
+.shop-status.rejected,.shop-status.locked{color:#b42318}
+.shop-status.suspended{color:#6941c6}
+@media(max-width:900px){
+  .admin-shop-row{grid-template-columns:minmax(0,1fr) 110px minmax(120px,auto) 16px}
+  .admin-shop-last{display:none}
+}
+@media(max-width:620px){
+  .admin-shop-row{grid-template-columns:minmax(0,1fr) 16px}
+  .admin-shop-metric{display:none}
+  .admin-row-actions{grid-column:1/-1;justify-content:flex-start}
+}
+
+
+/* ===== v0.24.1 signup full shop info ===== */
+.signup-menu-block{display:grid;gap:8px;margin-top:2px}
+.signup-menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.signup-menu-option{display:grid;grid-template-columns:30px 1fr 18px;gap:8px;align-items:center;border:1px solid #e4e7ec;background:#fff;border-radius:12px;padding:10px;text-align:left;cursor:pointer;color:inherit}
+.signup-menu-option>span{font-size:18px}
+.signup-menu-option>div{display:grid;gap:2px}
+.signup-menu-option small{font-size:10px;color:var(--muted)}
+.signup-menu-option i{width:17px;height:17px;border:1px solid #d0d5dd;border-radius:50%;display:grid;place-items:center;font-size:10px;font-style:normal;color:#fff}
+.signup-menu-option.selected{border-color:#fb8c1b;background:#fff7ed}
+.signup-menu-option.selected i{background:#fb8c1b;border-color:#fb8c1b}
+.admin-shop-type{color:#7c2d12!important}
+@media(max-width:520px){.signup-menu-grid{grid-template-columns:1fr}}

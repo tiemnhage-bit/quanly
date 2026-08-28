@@ -110,14 +110,14 @@ export async function GET(request){
 
       const {data:shop,error:shopError}=await admin
         .from('shops')
-        .select('id,code,name,phone,address,plan,status,owner_user_id,created_at,updated_at')
+        .select('id,code,name,phone,address,business_type,menu_preset,plan,status,owner_user_id,created_at,updated_at')
         .eq('id',shopId)
         .maybeSingle();
       if(shopError)throw shopError;
       if(!shop)return Response.json({error:'Không tìm thấy quán.'},{status:404});
 
       const [{data:profile},{data:state,error:stateError}]=await Promise.all([
-        admin.from('user_profiles').select('phone,email,created_at').eq('user_id',shop.owner_user_id).maybeSingle(),
+        admin.from('user_profiles').select('phone,email,approval_status,created_at').eq('user_id',shop.owner_user_id).maybeSingle(),
         admin.from('app_states').select('orders,updated_at').eq('shop_id',shopId).maybeSingle()
       ]);
       if(stateError)throw stateError;
@@ -137,8 +137,8 @@ export async function GET(request){
 
     // overview
     const [{data:shops,error:shopsError},{data:profiles,error:profilesError},{data:states,error:statesError}]=await Promise.all([
-      admin.from('shops').select('id,code,name,phone,address,plan,status,owner_user_id,created_at,updated_at').order('created_at',{ascending:false}),
-      admin.from('user_profiles').select('user_id,phone,email,created_at'),
+      admin.from('shops').select('id,code,name,phone,address,business_type,menu_preset,plan,status,owner_user_id,created_at,updated_at').order('created_at',{ascending:false}),
+      admin.from('user_profiles').select('user_id,phone,email,approval_status,created_at'),
       admin.from('app_states').select('shop_id,orders,updated_at')
     ]);
     if(shopsError)throw shopsError;
@@ -150,12 +150,13 @@ export async function GET(request){
     const today=vnDate();
     const sevenDaysAgo=dateDaysAgo(6);
 
-    let activeShops30=0,orders30=0,revenue30=0,newToday=0,new7=0;
+    let activeShops30=0,orders30=0,revenue30=0,newToday=0,new7=0,pendingShops=0;
 
     const rows=(shops||[]).map(s=>{
       const p=profileByUser.get(s.owner_user_id)||{};
       const st=stateByShop.get(s.id)||{};
       const metrics=summarizeOrders(Array.isArray(st.orders)?st.orders:[]);
+      if((p.approval_status||s.status)==='pending')pendingShops+=1;
       if(metrics.orders_30d>0)activeShops30+=1;
       orders30+=metrics.orders_30d;
       revenue30+=metrics.revenue_30d;
@@ -166,7 +167,8 @@ export async function GET(request){
 
       return {
         id:s.id,code:s.code,name:s.name,phone:s.phone,email:p.email||null,owner_phone:p.phone||null,
-        plan:s.plan,status:s.status,created_at:s.created_at,updated_at:st.updated_at||s.updated_at,
+        address:s.address||null,business_type:s.business_type||null,menu_preset:s.menu_preset||null,
+        plan:s.plan,status:p.approval_status||s.status||'active',created_at:s.created_at,updated_at:st.updated_at||s.updated_at,
         total_orders:metrics.total_orders,total_revenue:metrics.total_revenue,
         orders_30d:metrics.orders_30d,revenue_30d:metrics.revenue_30d
       };
@@ -177,6 +179,7 @@ export async function GET(request){
         total_users:(profiles||[]).length,
         total_shops:(shops||[]).length,
         active_shops_30d:activeShops30,
+        pending_shops:pendingShops,
         new_users_today:newToday,
         new_users_7d:new7,
         orders_30d:orders30,
@@ -186,5 +189,32 @@ export async function GET(request){
     });
   }catch(e){
     return Response.json({error:e?.message||'Có lỗi khi tải Admin SaaS.'},{status:e?.status||500});
+  }
+}
+
+
+export async function POST(request){
+  try{
+    await requireAdmin(request);
+    const body=await request.json();
+    if(body.action!=='status')return Response.json({error:'Hành động không hợp lệ.'},{status:400});
+    const allowed=['approved','active','rejected','suspended','locked'];
+    if(!allowed.includes(body.status))return Response.json({error:'Trạng thái không hợp lệ.'},{status:400});
+
+    const admin=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false}});
+    const {data:shop,error:shopError}=await admin
+      .from('shops').select('id,owner_user_id').eq('id',body.shopId).maybeSingle();
+    if(shopError)throw shopError;
+    if(!shop)return Response.json({error:'Không tìm thấy quán.'},{status:404});
+
+    const {error:profileError}=await admin.from('user_profiles')
+      .update({approval_status:body.status,updated_at:new Date().toISOString()})
+      .eq('user_id',shop.owner_user_id);
+    if(profileError)throw profileError;
+
+    await admin.from('shops').update({status:body.status,updated_at:new Date().toISOString()}).eq('id',shop.id);
+    return Response.json({ok:true,status:body.status});
+  }catch(e){
+    return Response.json({error:e?.message||'Không cập nhật được trạng thái.'},{status:e?.status||500});
   }
 }

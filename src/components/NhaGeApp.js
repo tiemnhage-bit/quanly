@@ -404,7 +404,7 @@ export default function NhaGeApp() {
   if (syncState === 'error' && !dataReady) return <SyncErrorScreen message={syncError} />;
 
   return <div className="app-shell">
-    <header className="topbar"><div><div className="brand">{shop?.name||'QUẢN LÝ QUÁN'}</div><div className="date">Free Beta · Bản 0.23 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn settings-btn" aria-label="Cài đặt" title="Cài đặt" onClick={() => setScreen('more')}>⚙</button></header>
+    <header className="topbar"><div><div className="brand">{shop?.name||'QUẢN LÝ QUÁN'}</div><div className="date">Free Beta · Bản 0.24.1 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn settings-btn" aria-label="Cài đặt" title="Cài đặt" onClick={() => setScreen('more')}>⚙</button></header>
     <main>
       <div className="page-transition" key={screen}>
       {role==='admin' && screen === 'home' && <Home todayRevenue={todayRevenue} dayOrders={dayOrders} todayQty={todayQty} cashToday={cashToday} bankToday={bankToday} knownCostToday={knownCostToday} ingredients={ingredients} closings={dayClosings} go={setScreen} openOrders={() => {setScreen('order');setOrderTab('list')}} />}
@@ -462,6 +462,9 @@ function AuthScreen(){
   const [ownerMode,setOwnerMode]=useState('login');
   const [phone,setPhone]=useState('');
   const [email,setEmail]=useState('');
+  const [shopName,setShopName]=useState('');
+  const [shopAddress,setShopAddress]=useState('');
+  const [menuPreset,setMenuPreset]=useState('cafe');
   const [username,setUsername]=useState('');
   const [shopCode,setShopCode]=useState('');
   const [password,setPassword]=useState('');
@@ -500,7 +503,11 @@ function AuthScreen(){
       const data=await res.json().catch(()=>({}));
       if(!res.ok){
         setBusy(false);
-        setMessage(data.error||'Sai số điện thoại hoặc mật khẩu.');
+        if(data.status==='pending') setMessage('Đăng ký thành công. Tài khoản đang chờ Admin xét duyệt.');
+        else if(data.status==='rejected') setMessage('Quán của bạn không được duyệt. Vui lòng liên hệ Admin nếu cần hỗ trợ.');
+        else if(data.status==='suspended') setMessage('Quán đang tạm ngưng. Vui lòng liên hệ Admin.');
+        else if(data.status==='locked') setMessage('Tài khoản đã bị khóa. Vui lòng liên hệ Admin.');
+        else setMessage(data.error||'Sai số điện thoại hoặc mật khẩu.');
         return;
       }
       const {error}=await supabase.auth.setSession({
@@ -548,6 +555,9 @@ function AuthScreen(){
     if(password.length<6){
       setBusy(false); setMessage('Mật khẩu cần ít nhất 6 ký tự.'); return;
     }
+    if(!shopName.trim()){
+      setBusy(false); setMessage('Vui lòng nhập tên quán.'); return;
+    }
 
     try{
       const res=await fetch('/api/auth/register',{
@@ -556,7 +566,10 @@ function AuthScreen(){
         body:JSON.stringify({
           phone:normalizeOwnerPhone(phone),
           email:email.trim().toLowerCase()||null,
-          password
+          password,
+          shopName:shopName.trim(),
+          shopAddress:shopAddress.trim()||null,
+          menuPreset
         })
       });
       const data=await res.json().catch(()=>({}));
@@ -566,30 +579,9 @@ function AuthScreen(){
         return;
       }
 
-      // Đăng nhập ngay qua resolver SĐT -> tài khoản Auth nội bộ.
-      const loginRes=await fetch('/api/auth/login',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({phone:normalizeOwnerPhone(phone),password})
-      });
-      const loginData=await loginRes.json().catch(()=>({}));
       setBusy(false);
-      if(!loginRes.ok){
-        setMessageOk(true);
-        setMessage('Tạo tài khoản thành công. Hãy chuyển sang Đăng nhập.');
-        return;
-      }
-      const {error:sessionError}=await supabase.auth.setSession({
-        access_token:loginData.access_token,
-        refresh_token:loginData.refresh_token
-      });
-      if(sessionError){
-        setMessageOk(true);
-        setMessage('Tạo tài khoản thành công. Hãy chuyển sang Đăng nhập.');
-        return;
-      }
       setMessageOk(true);
-      setMessage('Tạo tài khoản thành công. Đang mở bước tạo quán…');
+      setMessage('Đăng ký thành công. Tài khoản đang chờ Admin xét duyệt. Sau khi được duyệt, bạn đăng nhập để tạo quán.');
     }catch(err){
       setBusy(false); setMessage('Không kết nối được máy chủ. Vui lòng thử lại.');
     }
@@ -623,7 +615,7 @@ function AuthScreen(){
           />
         </label>
 
-        {ownerMode==='signup'&&
+        {ownerMode==='signup'&&<>
           <label>Email <span className="optional">không bắt buộc</span>
             <input
               type="email"
@@ -634,7 +626,31 @@ function AuthScreen(){
               placeholder="ban@quan.com"
             />
           </label>
-        }
+
+          <label>Tên quán
+            <input required value={shopName} onChange={e=>setShopName(e.target.value)} placeholder="Ví dụ: Mây Coffee"/>
+          </label>
+
+          <label>Địa chỉ <span className="optional">không bắt buộc</span>
+            <input value={shopAddress} onChange={e=>setShopAddress(e.target.value)} placeholder="Địa chỉ quán"/>
+          </label>
+
+          <div className="signup-menu-block">
+            <div className="starter-title">
+              <strong>Loại hình & menu khởi đầu</strong>
+              <small>Admin sẽ nhìn thấy lựa chọn này trước khi xét duyệt.</small>
+            </div>
+            <div className="signup-menu-grid">
+              {Object.entries(STARTER_MENUS).filter(([key])=>key!=='empty').map(([key,p])=>
+                <button type="button" key={key} className={'signup-menu-option '+(menuPreset===key?'selected':'')} onClick={()=>setMenuPreset(key)}>
+                  <span>{p.icon}</span>
+                  <div><strong>{p.label}</strong><small>{p.products.length} món mẫu</small></div>
+                  <i>{menuPreset===key?'✓':''}</i>
+                </button>
+              )}
+            </div>
+          </div>
+        </>}
 
         <label>Mật khẩu
           <div className="password-field">
@@ -647,10 +663,11 @@ function AuthScreen(){
         <button className="primary full" disabled={busy}>
           {busy?'Đang xử lý…':ownerMode==='signup'?'Tạo tài khoản Free':'Đăng nhập'}
         </button>
+        {ownerMode==='login'&&<a className="forgot-zalo" href="https://zalo.me/0332995337" target="_blank" rel="noreferrer">Quên mật khẩu? Nhắn Admin qua Zalo</a>}
       </form>
 
       {ownerMode==='signup'&&
-        <p className="hint">Số điện thoại là tài khoản đăng nhập. Email chỉ dùng làm thông tin liên hệ và có thể bổ sung sau.</p>
+        <p className="hint">Sau khi gửi đăng ký, Admin sẽ xem thông tin quán và xét duyệt. Khi được duyệt, bạn đăng nhập bằng SĐT để vào quán ngay.</p>
       }
     </>}
 
@@ -793,7 +810,7 @@ function CreateShopScreen({user,onCreated,onSignOut}){
   </div></div>
 }
 function LoadingScreen({text}){ return <div className="auth-shell"><div className="auth-card center"><div className="spinner"></div><strong>{text}</strong></div></div> }
-function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.23 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
+function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.24.1 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
 function SyncErrorScreen({message}){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa tải được dữ liệu</h1><p>Hãy kiểm tra đã chạy file <b>supabase.sql</b> trong Supabase chưa.</p><div className="auth-message">{message}</div></div></div> }
 
 function Nav({active,icon,label,onClick}) { return <button className={'nav-item '+(active?'active':'')} onClick={onClick}><span>{icon}</span><small>{label}</small></button> }
@@ -1806,14 +1823,38 @@ function SaasAdminDashboard({user,back}){
     setDetailLoading(false);
   }
 
+  async function setShopStatus(shopRow,status){
+    const labels={approved:'duyệt',rejected:'không duyệt',suspended:'tạm ngưng',locked:'khóa',active:'kích hoạt lại'};
+    if(!confirm(`Xác nhận ${labels[status]||status} quán "${shopRow.name}"?`))return;
+    try{
+      const {data:{session}}=await supabase.auth.getSession();
+      const res=await fetch('/api/admin/saas',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':`Bearer ${session?.access_token||''}`},
+        body:JSON.stringify({action:'status',shopId:shopRow.id,status})
+      });
+      const body=await res.json().catch(()=>({}));
+      if(!res.ok)throw new Error(body.error||'Không cập nhật được trạng thái.');
+      setShops(rows=>rows.map(s=>s.id===shopRow.id?{...s,status:body.status}:s));
+      if(selectedShop?.id===shopRow.id){
+        setSelectedShop(s=>({...s,status:body.status}));
+        setDetail(d=>d?{...d,shop:{...d.shop,status:body.status}}:d);
+      }
+    }catch(e){alert(e.message);}
+  }
+
   const filtered=shops.filter(s=>{
     const q=search.trim().toLowerCase();
     const matchesSearch=!q || [
       s.name,s.code,s.phone,s.email,s.owner_phone
     ].some(v=>String(v||'').toLowerCase().includes(q));
     if(!matchesSearch)return false;
-    if(activity==='active')return Number(s.orders_30d||0)>0;
-    if(activity==='inactive')return Number(s.orders_30d||0)===0;
+    if(activity==='pending')return s.status==='pending';
+    if(activity==='suspended')return s.status==='suspended';
+    if(activity==='locked')return s.status==='locked';
+    if(activity==='rejected')return s.status==='rejected';
+    if(activity==='active')return ['active','approved'].includes(s.status)&&Number(s.orders_30d||0)>0;
+    if(activity==='inactive')return ['active','approved'].includes(s.status)&&Number(s.orders_30d||0)===0;
     return true;
   });
 
@@ -1864,6 +1905,9 @@ function SaasAdminDashboard({user,back}){
               <div><span>SĐT</span><strong>{displayOwnerPhone(detail.profile?.phone||'')||'—'}</strong></div>
               <div><span>Email</span><strong>{detail.profile?.email||'—'}</strong></div>
               <div><span>Ngày đăng ký</span><strong>{shortDate(detail.shop?.created_at)}</strong></div>
+              <div><span>Loại hình</span><strong>{detail.shop?.business_type||'—'}</strong></div>
+              <div><span>Menu mẫu</span><strong>{detail.shop?.menu_preset||'—'}</strong></div>
+              <div><span>Địa chỉ</span><strong>{detail.shop?.address||'—'}</strong></div>
               <div><span>Gói</span><strong>{String(detail.shop?.plan||'free').toUpperCase()}</strong></div>
             </div>
           </div>
@@ -1906,7 +1950,7 @@ function SaasAdminDashboard({user,back}){
     {!loading&&!error&&<>
       <div className="admin-stat-grid">
         <div className="card admin-stat"><span>Tổng user</span><strong>{summary?.total_users||0}</strong><small>chủ quán đã đăng ký</small></div>
-        <div className="card admin-stat"><span>Tổng quán</span><strong>{summary?.total_shops||0}</strong><small>{summary?.active_shops_30d||0} quán có đơn 30 ngày</small></div>
+        <div className="card admin-stat"><span>Tổng quán</span><strong>{summary?.total_shops||0}</strong><small>{summary?.pending_shops||0} chờ duyệt · {summary?.active_shops_30d||0} có đơn 30 ngày</small></div>
         <div className="card admin-stat"><span>User mới · 7 ngày</span><strong>{summary?.new_users_7d||0}</strong><small>{summary?.new_users_today||0} đăng ký hôm nay</small></div>
         <div className="card admin-stat"><span>GMV · 30 ngày</span><strong>{money(summary?.revenue_30d)}</strong><small>{summary?.orders_30d||0} đơn</small></div>
       </div>
@@ -1915,8 +1959,12 @@ function SaasAdminDashboard({user,back}){
         <div className="admin-search-wrap"><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Tìm SĐT, email, tên quán, mã quán…"/></div>
         <select value={activity} onChange={e=>setActivity(e.target.value)}>
           <option value="all">Tất cả quán</option>
+          <option value="pending">Chờ xét duyệt</option>
           <option value="active">Có đơn 30 ngày</option>
           <option value="inactive">Chưa có đơn 30 ngày</option>
+          <option value="suspended">Đang tạm ngưng</option>
+          <option value="locked">Đã khóa</option>
+          <option value="rejected">Không duyệt</option>
         </select>
         <button className="secondary" onClick={exportCsv}>Xuất CSV</button>
       </div>
@@ -1928,9 +1976,15 @@ function SaasAdminDashboard({user,back}){
           <div className="admin-shop-main">
             <div><strong>{s.name}</strong><span>{s.code}</span></div>
             <small>{displayOwnerPhone(s.owner_phone||s.phone||'')||'Chưa có SĐT'}{s.email?` · ${s.email}`:''}</small>
+            <small className="admin-shop-type">{s.business_type||'Chưa chọn loại hình'}{s.address?` · ${s.address}`:''}</small>
           </div>
           <div className="admin-shop-metric"><span>30 ngày</span><strong>{money(s.revenue_30d)}</strong><small>{s.orders_30d||0} đơn</small></div>
-          <div className="admin-shop-last"><span>Đăng ký</span><strong>{shortDate(s.created_at)}</strong><small>{s.orders_30d>0?'Đang dùng':'Chưa phát sinh đơn'}</small></div>
+          <div className="admin-shop-last"><span>Đăng ký</span><strong>{shortDate(s.created_at)}</strong><small className={`shop-status ${s.status||'active'}`}>{s.status==='pending'?'Chờ duyệt':s.status==='rejected'?'Không duyệt':s.status==='suspended'?'Tạm ngưng':s.status==='locked'?'Đã khóa':'Đang hoạt động'}</small></div>
+          <div className="admin-row-actions" onClick={e=>e.stopPropagation()}>
+            {s.status==='pending'&&<><button className="approve" onClick={()=>setShopStatus(s,'approved')}>Duyệt</button><button onClick={()=>setShopStatus(s,'rejected')}>Không duyệt</button></>}
+            {['active','approved'].includes(s.status)&&<><button onClick={()=>setShopStatus(s,'suspended')}>Tạm ngưng</button><button className="danger" onClick={()=>setShopStatus(s,'locked')}>Khóa</button></>}
+            {['suspended','locked','rejected'].includes(s.status)&&<button className="approve" onClick={()=>setShopStatus(s,'active')}>Kích hoạt</button>}
+          </div>
           <span className="admin-shop-arrow">›</span>
         </button>)}
       </div>
