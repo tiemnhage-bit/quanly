@@ -404,7 +404,7 @@ export default function NhaGeApp() {
   if (syncState === 'error' && !dataReady) return <SyncErrorScreen message={syncError} />;
 
   return <div className="app-shell">
-    <header className="topbar"><div><div className="brand">{shop?.name||'QUẢN LÝ QUÁN'}</div><div className="date">Free Beta · Bản 0.20 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn settings-btn" aria-label="Cài đặt" title="Cài đặt" onClick={() => setScreen('more')}>⚙</button></header>
+    <header className="topbar"><div><div className="brand">{shop?.name||'QUẢN LÝ QUÁN'}</div><div className="date">Free Beta · Bản 0.20.1 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn settings-btn" aria-label="Cài đặt" title="Cài đặt" onClick={() => setScreen('more')}>⚙</button></header>
     <main>
       <div className="page-transition" key={screen}>
       {role==='admin' && screen === 'home' && <Home todayRevenue={todayRevenue} dayOrders={dayOrders} todayQty={todayQty} cashToday={cashToday} bankToday={bankToday} knownCostToday={knownCostToday} ingredients={ingredients} closings={dayClosings} go={setScreen} openOrders={() => {setScreen('order');setOrderTab('list')}} />}
@@ -436,9 +436,25 @@ export default function NhaGeApp() {
   </div>;
 }
 
+function normalizeOwnerPhone(value=''){
+  let digits=String(value).replace(/\D/g,'');
+  if(digits.startsWith('0')) digits='84'+digits.slice(1);
+  else if(!digits.startsWith('84') && digits.length===9) digits='84'+digits;
+  return digits;
+}
+function ownerPhoneLoginEmail(value=''){
+  const phone=normalizeOwnerPhone(value);
+  return phone ? `p${phone}@users.quanlyquan.local` : '';
+}
+function displayOwnerPhone(value=''){
+  const phone=normalizeOwnerPhone(value);
+  return phone.startsWith('84') ? '0'+phone.slice(2) : phone;
+}
+
 function AuthScreen(){
   const [mode,setMode]=useState('owner');
   const [ownerMode,setOwnerMode]=useState('login');
+  const [phone,setPhone]=useState('');
   const [email,setEmail]=useState('');
   const [username,setUsername]=useState('');
   const [shopCode,setShopCode]=useState('');
@@ -448,13 +464,26 @@ function AuthScreen(){
   const [message,setMessage]=useState('');
   const [messageOk,setMessageOk]=useState(false);
 
+  function validPhone(){
+    const p=normalizeOwnerPhone(phone);
+    return /^84\d{9}$/.test(p);
+  }
+
   async function loginOwner(e){
     e.preventDefault(); setBusy(true); setMessage(''); setMessageOk(false);
-    const login=String(email||'').trim().toLowerCase();
+    const raw=String(phone||'').trim();
+
     // Giữ tương thích tài khoản Admin cũ của Nhà Gé.
-    const resolvedEmail=login==='admin'?'admin@tiemnhage.local':login;
+    const resolvedEmail=raw.toLowerCase()==='admin'
+      ? 'admin@tiemnhage.local'
+      : ownerPhoneLoginEmail(raw);
+
+    if(raw.toLowerCase()!=='admin' && !validPhone()){
+      setBusy(false); setMessage('Số điện thoại chưa đúng. Ví dụ: 0901234567'); return;
+    }
+
     const {error}=await supabase.auth.signInWithPassword({email:resolvedEmail,password});
-    if(error) setMessage('Sai email/tên đăng nhập hoặc mật khẩu.');
+    if(error) setMessage('Sai số điện thoại hoặc mật khẩu.');
     setBusy(false);
   }
 
@@ -482,27 +511,48 @@ function AuthScreen(){
 
   async function signup(e){
     e.preventDefault(); setBusy(true); setMessage(''); setMessageOk(false);
-    const ownerEmail=email.trim().toLowerCase();
-    if(!ownerEmail.includes('@')) { setBusy(false); setMessage('Vui lòng nhập email thật để tạo tài khoản chủ quán.'); return; }
-    if(password.length<6) { setBusy(false); setMessage('Mật khẩu cần ít nhất 6 ký tự.'); return; }
-    const {data,error}=await supabase.auth.signUp({email:ownerEmail,password,options:{emailRedirectTo:window.location.origin}});
-    setBusy(false);
-    if(error){setMessage(error.message);return;}
-    if(data?.session){
-      setMessageOk(true); setMessage('Tạo tài khoản thành công. Đang mở bước tạo quán…');
-    }else{
-      setMessageOk(true); setMessage('Đã tạo tài khoản. Hãy mở email xác nhận, sau đó quay lại đăng nhập để tạo quán.');
-    }
-  }
 
-  async function forgotPassword(){
-    const ownerEmail=email.trim().toLowerCase();
-    if(!ownerEmail.includes('@')) return setMessage('Nhập email chủ quán trước.');
-    setBusy(true); setMessage(''); setMessageOk(false);
-    const {error}=await supabase.auth.resetPasswordForEmail(ownerEmail,{redirectTo:window.location.origin});
-    setBusy(false);
-    if(error)return setMessage(error.message);
-    setMessageOk(true); setMessage('Đã gửi email đặt lại mật khẩu.');
+    if(!validPhone()){
+      setBusy(false); setMessage('Số điện thoại chưa đúng. Ví dụ: 0901234567'); return;
+    }
+    if(email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())){
+      setBusy(false); setMessage('Email chưa đúng định dạng hoặc để trống nếu không dùng.'); return;
+    }
+    if(password.length<6){
+      setBusy(false); setMessage('Mật khẩu cần ít nhất 6 ký tự.'); return;
+    }
+
+    try{
+      const res=await fetch('/api/auth/register',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          phone:normalizeOwnerPhone(phone),
+          email:email.trim().toLowerCase()||null,
+          password
+        })
+      });
+      const data=await res.json().catch(()=>({}));
+      if(!res.ok){
+        setBusy(false);
+        setMessage(data.error||'Không tạo được tài khoản.');
+        return;
+      }
+
+      // API đã tạo user xác thực sẵn. Đăng nhập ngay bằng SĐT.
+      const loginEmail=ownerPhoneLoginEmail(phone);
+      const {error}=await supabase.auth.signInWithPassword({email:loginEmail,password});
+      setBusy(false);
+      if(error){
+        setMessageOk(true);
+        setMessage('Tạo tài khoản thành công. Hãy chuyển sang Đăng nhập.');
+        return;
+      }
+      setMessageOk(true);
+      setMessage('Tạo tài khoản thành công. Đang mở bước tạo quán…');
+    }catch(err){
+      setBusy(false); setMessage('Không kết nối được máy chủ. Vui lòng thử lại.');
+    }
   }
 
   return <div className="auth-shell"><div className="auth-card saas-auth">
@@ -520,14 +570,48 @@ function AuthScreen(){
         <button className={ownerMode==='login'?'active':''} onClick={()=>{setOwnerMode('login');setMessage('')}}>Đăng nhập</button>
         <button className={ownerMode==='signup'?'active':''} onClick={()=>{setOwnerMode('signup');setMessage('')}}>Đăng ký miễn phí</button>
       </div>
+
       <form className="auth-form" onSubmit={ownerMode==='signup'?signup:loginOwner}>
-        <label>{ownerMode==='login'?'Email / Admin':'Email chủ quán'}<input required value={email} onChange={e=>setEmail(e.target.value)} autoCapitalize="none" autoComplete="email" placeholder={ownerMode==='login'?'email@quan.com':'ban@quan.com'} /></label>
-        <label>Mật khẩu<div className="password-field"><input type={showPassword?'text':'password'} required minLength={6} value={password} onChange={e=>setPassword(e.target.value)} /><button type="button" className="password-eye" onClick={()=>setShowPassword(v=>!v)} aria-label={showPassword?'Ẩn mật khẩu':'Xem mật khẩu'}>{showPassword?'◉':'◌'}</button></div></label>
+        <label>Số điện thoại
+          <input
+            required
+            inputMode="tel"
+            autoComplete="tel"
+            value={phone}
+            onChange={e=>setPhone(e.target.value)}
+            placeholder={ownerMode==='login'?'0901 234 567':'0901 234 567'}
+          />
+        </label>
+
+        {ownerMode==='signup'&&
+          <label>Email <span className="optional">không bắt buộc</span>
+            <input
+              type="email"
+              value={email}
+              onChange={e=>setEmail(e.target.value)}
+              autoCapitalize="none"
+              autoComplete="email"
+              placeholder="ban@quan.com"
+            />
+          </label>
+        }
+
+        <label>Mật khẩu
+          <div className="password-field">
+            <input type={showPassword?'text':'password'} required minLength={6} value={password} onChange={e=>setPassword(e.target.value)} />
+            <button type="button" className="password-eye" onClick={()=>setShowPassword(v=>!v)} aria-label={showPassword?'Ẩn mật khẩu':'Xem mật khẩu'}>{showPassword?'◉':'◌'}</button>
+          </div>
+        </label>
+
         {message&&<div className={'auth-message '+(messageOk?'ok':'')}>{message}</div>}
-        <button className="primary full" disabled={busy}>{busy?'Đang xử lý…':ownerMode==='signup'?'Tạo tài khoản Free':'Đăng nhập'}</button>
-        {ownerMode==='login'&&<button type="button" className="auth-link-btn" onClick={forgotPassword} disabled={busy}>Quên mật khẩu?</button>}
+        <button className="primary full" disabled={busy}>
+          {busy?'Đang xử lý…':ownerMode==='signup'?'Tạo tài khoản Free':'Đăng nhập'}
+        </button>
       </form>
-      {ownerMode==='signup'&&<p className="hint">Sau khi đăng ký, app sẽ yêu cầu tạo tên quán. Quán mới bắt đầu với dữ liệu trống.</p>}
+
+      {ownerMode==='signup'&&
+        <p className="hint">Số điện thoại là tài khoản đăng nhập. Email chỉ dùng làm thông tin liên hệ và có thể bổ sung sau.</p>
+      }
     </>}
 
     {mode==='employee'&&<form className="auth-form" onSubmit={loginEmployee}>
@@ -540,7 +624,6 @@ function AuthScreen(){
     </form>}
   </div></div>
 }
-
 function CreateShopScreen({user,onCreated,onSignOut}){
   const [form,setForm]=useState({name:'',phone:'',address:''});
   const [busy,setBusy]=useState(false);
@@ -576,7 +659,7 @@ function CreateShopScreen({user,onCreated,onSignOut}){
   </div></div>
 }
 function LoadingScreen({text}){ return <div className="auth-shell"><div className="auth-card center"><div className="spinner"></div><strong>{text}</strong></div></div> }
-function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.20 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
+function SetupScreen(){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa kết nối dữ liệu</h1><p>Bản 0.20.1 cần thêm thông tin kết nối Supabase trên Vercel trước khi đăng nhập được.</p><div className="auth-message">Cần 2 biến: NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY.</div></div></div> }
 function SyncErrorScreen({message}){ return <div className="auth-shell"><div className="auth-card"><h1>Chưa tải được dữ liệu</h1><p>Hãy kiểm tra đã chạy file <b>supabase.sql</b> trong Supabase chưa.</p><div className="auth-message">{message}</div></div></div> }
 
 function Nav({active,icon,label,onClick}) { return <button className={'nav-item '+(active?'active':'')} onClick={onClick}><span>{icon}</span><small>{label}</small></button> }
