@@ -477,7 +477,7 @@ export default function NhaGeApp() {
   if (syncState === 'error' && !dataReady) return <SyncErrorScreen message={syncError} />;
 
   return <div className="app-shell">
-    <header className="topbar"><div><div className="brand">{shop?.name||'QUẢN LÝ QUÁN'}</div><div className="date">Free Beta · Bản 0.25.6 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn settings-btn admin-settings-wrap" aria-label="Cài đặt" title="Cài đặt" onClick={() => setScreen('more')}>⚙{isSaasAdminUser(user)&&pendingApprovals.length>0&&<span className="admin-pending-badge">{pendingApprovals.length}</span>}</button></header>
+    <header className="topbar"><div><div className="brand">{shop?.name||'QUẢN LÝ QUÁN'}</div><div className="date">Free Beta · Bản 0.25.7 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn settings-btn admin-settings-wrap" aria-label="Cài đặt" title="Cài đặt" onClick={() => setScreen('more')}>⚙{isSaasAdminUser(user)&&pendingApprovals.length>0&&<span className="admin-pending-badge">{pendingApprovals.length}</span>}</button></header>
     <main>
       <div className="page-transition" key={screen}>
       {role==='admin' && screen === 'home' && <Home todayRevenue={todayRevenue} dayOrders={dayOrders} todayQty={todayQty} cashToday={cashToday} bankToday={bankToday} knownCostToday={knownCostToday} ingredients={ingredients} closings={dayClosings} go={setScreen} openOrders={() => {setScreen('order');setOrderTab('list')}} />}
@@ -1551,10 +1551,6 @@ function Cash({orders,receipts,transactions,setTransactions,categories,setCatego
   const calculatedIncome=all.filter(x=>x.type==='Thu').reduce((s,x)=>s+Number(x.amount||0),0);
   const calculatedOutcome=all.filter(x=>x.type==='Chi').reduce((s,x)=>s+Number(x.amount||0),0);
   const hasOverride=(key)=>openingBalances?.[key]!==undefined&&openingBalances?.[key]!==null&&openingBalances?.[key]!=='';
-  // Snapshot đối soát chỉ thay số trên thẻ tổng quan, không sửa lịch sử giao dịch.
-  const income=hasOverride('summaryIncomeOverride')?Number(openingBalances.summaryIncomeOverride):calculatedIncome;
-  const outcome=hasOverride('summaryOutcomeOverride')?Number(openingBalances.summaryOutcomeOverride):calculatedOutcome;
-  const balance=income-outcome;
   const isBankPayment=(p)=>p==='Chuyển khoản'||p==='App Food'||p==='Grab Food'||p==='Shopee Food'||p==='Green Food'||p==='Be Food';
   const cashIn=all.filter(x=>x.type==='Thu'&&x.payment==='Tiền mặt').reduce((s,x)=>s+Number(x.amount||0),0);
   const cashOut=all.filter(x=>x.type==='Chi'&&x.payment==='Tiền mặt').reduce((s,x)=>s+Number(x.amount||0),0);
@@ -1562,8 +1558,34 @@ function Cash({orders,receipts,transactions,setTransactions,categories,setCatego
   const bankOut=all.filter(x=>x.type==='Chi'&&isBankPayment(x.payment)).reduce((s,x)=>s+Number(x.amount||0),0);
   const calculatedCash=Number(openingBalances?.cash||0)+cashIn-cashOut;
   const calculatedBank=Number(openingBalances?.bank||0)+bankIn-bankOut;
-  const currentCash=hasOverride('currentCashOverride')?Number(openingBalances.currentCashOverride):calculatedCash;
-  const currentBank=hasOverride('currentBankOverride')?Number(openingBalances.currentBankOverride):calculatedBank;
+
+  // Số liệu đối soát chỉ là MỐC GỐC. Mọi giao dịch phát sinh sau mốc tiếp tục cộng/trừ tự động.
+  const reconcileAtMs=Number(openingBalances?.summaryReconcileAtMs||0);
+  const recordMs=(x)=>{
+    const m=String(x?.id||'').match(/(\d{13})(?!.*\d)/);
+    return m?Number(m[1]):0;
+  };
+  const afterReconcile=reconcileAtMs>0?all.filter(x=>recordMs(x)>reconcileAtMs):[];
+  const postIncome=afterReconcile.filter(x=>x.type==='Thu').reduce((s,x)=>s+Number(x.amount||0),0);
+  const postOutcome=afterReconcile.filter(x=>x.type==='Chi').reduce((s,x)=>s+Number(x.amount||0),0);
+  const postCashIn=afterReconcile.filter(x=>x.type==='Thu'&&x.payment==='Tiền mặt').reduce((s,x)=>s+Number(x.amount||0),0);
+  const postCashOut=afterReconcile.filter(x=>x.type==='Chi'&&x.payment==='Tiền mặt').reduce((s,x)=>s+Number(x.amount||0),0);
+  const postBankIn=afterReconcile.filter(x=>x.type==='Thu'&&isBankPayment(x.payment)).reduce((s,x)=>s+Number(x.amount||0),0);
+  const postBankOut=afterReconcile.filter(x=>x.type==='Chi'&&isBankPayment(x.payment)).reduce((s,x)=>s+Number(x.amount||0),0);
+
+  const income=hasOverride('summaryIncomeOverride')
+    ? Number(openingBalances.summaryIncomeOverride)+(reconcileAtMs>0?postIncome:0)
+    : calculatedIncome;
+  const outcome=hasOverride('summaryOutcomeOverride')
+    ? Number(openingBalances.summaryOutcomeOverride)+(reconcileAtMs>0?postOutcome:0)
+    : calculatedOutcome;
+  const balance=income-outcome;
+  const currentCash=hasOverride('currentCashOverride')
+    ? Number(openingBalances.currentCashOverride)+(reconcileAtMs>0?postCashIn-postCashOut:0)
+    : calculatedCash;
+  const currentBank=hasOverride('currentBankOverride')
+    ? Number(openingBalances.currentBankOverride)+(reconcileAtMs>0?postBankIn-postBankOut:0)
+    : calculatedBank;
   const currentTotal=currentCash+currentBank;
 
   const shown=all.filter(x=>tab==='all'||(tab==='income'&&x.type==='Thu')||(tab==='expense'&&x.type==='Chi'));
@@ -1676,7 +1698,7 @@ function Cash({orders,receipts,transactions,setTransactions,categories,setCatego
       <div className="card wallet-card"><div className="muted">CHUYỂN KHOẢN / APP</div><div className={'money '+(currentBank<0?'negative':'')}>{currentBank<0?'-':''}{fmt(Math.abs(currentBank))}</div></div>
       <div className="card wallet-card total-wallet"><div className="muted">TỔNG TIỀN ĐANG CÓ</div><div className={'money '+(currentTotal<0?'negative':'')}>{currentTotal<0?'-':''}{fmt(Math.abs(currentTotal))}</div></div>
     </div>
-    {(hasOverride('summaryIncomeOverride')||hasOverride('summaryOutcomeOverride')||hasOverride('currentCashOverride')||hasOverride('currentBankOverride'))&&<div className="card auto-note"><strong>Số liệu đối soát</strong><p>Các thẻ tổng quan đang dùng số liệu đã đối soát từ app cũ. Lịch sử thu/chi bên dưới vẫn giữ nguyên.</p></div>}
+    {(hasOverride('summaryIncomeOverride')||hasOverride('summaryOutcomeOverride')||hasOverride('currentCashOverride')||hasOverride('currentBankOverride'))&&<div className="card auto-note"><strong>Số liệu đối soát</strong><p>Số liệu cũ chỉ là mốc gốc. Các khoản thu/chi, đơn tại quán và App Food phát sinh sau mốc sẽ tự động cộng/trừ vào tổng.</p></div>}
 
     <div className="card auto-note">
       <strong>Tự động ghi nhận</strong>
