@@ -477,7 +477,7 @@ export default function NhaGeApp() {
   if (syncState === 'error' && !dataReady) return <SyncErrorScreen message={syncError} />;
 
   return <div className="app-shell">
-    <header className="topbar"><div><div className="brand">{shop?.name||'QUẢN LÝ QUÁN'}</div><div className="date">Free Beta · Bản 0.25.9 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn settings-btn admin-settings-wrap" aria-label="Cài đặt" title="Cài đặt" onClick={() => setScreen('more')}>⚙{isSaasAdminUser(user)&&pendingApprovals.length>0&&<span className="admin-pending-badge">{pendingApprovals.length}</span>}</button></header>
+    <header className="topbar"><div><div className="brand">{shop?.name||'QUẢN LÝ QUÁN'}</div><div className="date">Free Beta · Bản 0.25.10 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn settings-btn admin-settings-wrap" aria-label="Cài đặt" title="Cài đặt" onClick={() => setScreen('more')}>⚙{isSaasAdminUser(user)&&pendingApprovals.length>0&&<span className="admin-pending-badge">{pendingApprovals.length}</span>}</button></header>
     <main>
       <div className="page-transition" key={screen}>
       {role==='admin' && screen === 'home' && <Home todayRevenue={todayRevenue} dayOrders={dayOrders} todayQty={todayQty} cashToday={cashToday} bankToday={bankToday} knownCostToday={knownCostToday} ingredients={ingredients} closings={dayClosings} go={setScreen} openOrders={() => {setScreen('order');setOrderTab('list')}} />}
@@ -1573,11 +1573,10 @@ function Cash({orders,receipts,transactions,setTransactions,categories,setCatego
 
   // Số liệu đối soát chỉ là MỐC GỐC. Mọi giao dịch phát sinh sau mốc tiếp tục cộng/trừ tự động.
   const reconcileAtMs=Number(openingBalances?.summaryReconcileAtMs||0);
-  const recordMs=(x)=>{
-    const m=String(x?.id||'').match(/(\d{13})(?!.*\d)/);
-    return m?Number(m[1]):0;
-  };
-  const afterReconcile=reconcileAtMs>0?all.filter(x=>recordMs(x)>reconcileAtMs):[];
+  // Dùng THỜI GIAN GIAO DỊCH thực tế để xác định phát sinh sau mốc.
+  // Không dùng timestamp trong ID vì dữ liệu import cũ có ID được tạo sau ngày giao dịch,
+  // khiến các đơn cũ bị cộng nhầm vào tổng Tiền vào sau đối soát.
+  const afterReconcile=reconcileAtMs>0?all.filter(x=>cashSortTime(x)>reconcileAtMs):[];
   const postIncome=afterReconcile.filter(x=>x.type==='Thu').reduce((s,x)=>s+Number(x.amount||0),0);
   const postOutcome=afterReconcile.filter(x=>x.type==='Chi').reduce((s,x)=>s+Number(x.amount||0),0);
   const postCashIn=afterReconcile.filter(x=>x.type==='Thu'&&x.payment==='Tiền mặt').reduce((s,x)=>s+Number(x.amount||0),0);
