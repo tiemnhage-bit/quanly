@@ -477,7 +477,7 @@ export default function NhaGeApp() {
   if (syncState === 'error' && !dataReady) return <SyncErrorScreen message={syncError} />;
 
   return <div className="app-shell">
-    <header className="topbar"><div><div className="brand">{shop?.name||'QUẢN LÝ QUÁN'}</div><div className="date">Free Beta · Bản 0.25.5 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn settings-btn admin-settings-wrap" aria-label="Cài đặt" title="Cài đặt" onClick={() => setScreen('more')}>⚙{isSaasAdminUser(user)&&pendingApprovals.length>0&&<span className="admin-pending-badge">{pendingApprovals.length}</span>}</button></header>
+    <header className="topbar"><div><div className="brand">{shop?.name||'QUẢN LÝ QUÁN'}</div><div className="date">Free Beta · Bản 0.25.6 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn settings-btn admin-settings-wrap" aria-label="Cài đặt" title="Cài đặt" onClick={() => setScreen('more')}>⚙{isSaasAdminUser(user)&&pendingApprovals.length>0&&<span className="admin-pending-badge">{pendingApprovals.length}</span>}</button></header>
     <main>
       <div className="page-transition" key={screen}>
       {role==='admin' && screen === 'home' && <Home todayRevenue={todayRevenue} dayOrders={dayOrders} todayQty={todayQty} cashToday={cashToday} bankToday={bankToday} knownCostToday={knownCostToday} ingredients={ingredients} closings={dayClosings} go={setScreen} openOrders={() => {setScreen('order');setOrderTab('list')}} />}
@@ -1435,7 +1435,7 @@ function OrderDrawer({order,onClose,onCancel,onSave,readOnly=false}) {
 
 function Stock({audit,persistStockPatch,ingredients,setIngredients,receipts,setReceipts,counts,setCounts,adjustments,setAdjustments,products=[],setProducts}){
   const [tab,setTab]=useState('inventory'); const [modal,setModal]=useState(null);
-  const [ingForm,setIngForm]=useState({id:null,name:'',type:'Nguyên liệu',unit:'g',qty:'',minQty:'',purchasePrice:''});
+  const [ingForm,setIngForm]=useState({id:null,name:'',type:'Nguyên liệu',unit:'g',qty:'',minQty:'',purchasePrice:'',note:''});
   const [receipt,setReceipt]=useState({date:todayISO(),ingredientId:'',qty:'',unitPrice:'',total:'',payment:'Chuyển khoản'});
   const [count,setCount]=useState({date:todayISO(),ingredientId:'',actual:'',note:''});
   const [adjust,setAdjust]=useState({date:todayISO(),ingredientId:'',qty:'',reason:'Hư hao',note:''});
@@ -1483,7 +1483,7 @@ function Stock({audit,persistStockPatch,ingredients,setIngredients,receipts,setR
     }catch(e){alert(e.message||'Không đọc được file Excel nguyên liệu.');}
   }
 
-  async function saveIngredient(e){e.preventDefault();if(!ingForm.name.trim())return;const item={...ingForm,id:ingForm.id||`NL-${Date.now()}`,qty:Number(ingForm.qty||0),minQty:Number(ingForm.minQty||0),purchasePrice:Number(ingForm.purchasePrice||0)};const next=ingForm.id?ingredients.map(x=>x.id===item.id?item:x):[...ingredients,item];if(await persistStockPatch?.({ingredients:next})===false)return;setIngredients(next);setIngForm({id:null,name:'',type:'Nguyên liệu',unit:'g',qty:'',minQty:'',purchasePrice:''});setModal(null);}
+  async function saveIngredient(e){e.preventDefault();if(!ingForm.name.trim())return;const item={...ingForm,id:ingForm.id||`NL-${Date.now()}`,qty:Number(ingForm.qty||0),minQty:Number(ingForm.minQty||0),purchasePrice:Number(ingForm.purchasePrice||0)};const next=ingForm.id?ingredients.map(x=>x.id===item.id?item:x):[...ingredients,item];if(await persistStockPatch?.({ingredients:next})===false)return;setIngredients(next);setIngForm({id:null,name:'',type:'Nguyên liệu',unit:'g',qty:'',minQty:'',purchasePrice:'',note:''});setModal(null);}
   async function deleteIngredient(){
     if(!ingForm.id)return;
     const usedBy=(products||[]).filter(p=>(p.recipe||[]).some(r=>r.ingredientId===ingForm.id));
@@ -1491,7 +1491,7 @@ function Stock({audit,persistStockPatch,ingredients,setIngredients,receipts,setR
     if(!confirm(`Xóa "${ingForm.name}" khỏi danh mục kho?${extra}\nLịch sử nhập/kiểm kê cũ vẫn được giữ.`))return;
     const id=ingForm.id;const nextIngredients=ingredients.filter(x=>x.id!==id);const nextProducts=(products||[]).map(p=>({...p,recipe:(p.recipe||[]).filter(r=>r.ingredientId!==id)}));
     if(await persistStockPatch?.({ingredients:nextIngredients,products:nextProducts})===false)return;
-    setIngredients(nextIngredients);if(setProducts)setProducts(nextProducts);setIngForm({id:null,name:'',type:'Nguyên liệu',unit:'g',qty:'',minQty:'',purchasePrice:''});setModal(null);
+    setIngredients(nextIngredients);if(setProducts)setProducts(nextProducts);setIngForm({id:null,name:'',type:'Nguyên liệu',unit:'g',qty:'',minQty:'',purchasePrice:'',note:''});setModal(null);
   }
   function editIngredient(x){setIngForm({...x});setModal('ingredient');}
   async function saveReceipt(e){e.preventDefault();const q=Number(receipt.qty||0);if(!receipt.ingredientId||q<=0)return alert('Chọn nguyên liệu và nhập số lượng.');const total=Number(receipt.total||0),entered=Number(receipt.unitPrice||0),unitPrice=entered>0?entered:(total>0?total/q:0);const nextIngredients=ingredients.map(x=>{if(x.id!==receipt.ingredientId)return x;const oldQty=Math.max(0,Number(x.qty||0)),oldPrice=Number(x.purchasePrice||0),nextQty=oldQty+q,avg=unitPrice>0?((oldQty*oldPrice)+(q*unitPrice))/nextQty:oldPrice;return {...x,qty:nextQty,purchasePrice:Math.round(avg)};});const nextReceipts=[{id:`PN-${Date.now()}`,...receipt,qty:q,unitPrice,total},...receipts];if(await persistStockPatch?.({ingredients:nextIngredients,stock_receipts:nextReceipts})===false)return;setIngredients(nextIngredients);setReceipts(nextReceipts);audit?.('Nhập kho',`${ingMap[receipt.ingredientId]?.name||''} +${q} ${ingMap[receipt.ingredientId]?.unit||''}`);setReceipt({date:todayISO(),ingredientId:'',qty:'',unitPrice:'',total:'',payment:'Chuyển khoản'});setModal(null);}
@@ -1504,7 +1504,7 @@ function Stock({audit,persistStockPatch,ingredients,setIngredients,receipts,setR
   {tab==='receipts'&&<><button className="primary full" onClick={()=>setModal('receipt')}>+ Tạo phiếu nhập hàng</button><div className="card stock-list">{receipts.length?receipts.map(r=><div className="stock-row" key={r.id}><div><strong>{ingMap[r.ingredientId]?.name||'Nguyên liệu'}</strong><small>{r.date} · {r.payment}</small></div><span>+{r.qty} {ingMap[r.ingredientId]?.unit||''}<small>{r.total?fmt(r.total):''}</small></span></div>):<div className="empty">Chưa có phiếu nhập.</div>}</div></>}
   {tab==='counts'&&<><button className="primary full" onClick={()=>setModal('count')}>+ Kiểm kê kho</button><div className="card stock-list">{counts.length?counts.map(c=><div className="stock-row" key={c.id}><div><strong>{c.name}</strong><small>{c.date} · Hệ thống {c.before} {c.unit}</small></div><span>{c.actual} {c.unit}<small>Lệch {c.diff>0?'+':''}{c.diff}</small></span></div>):<div className="empty">Chưa có lần kiểm kê.</div>}</div></>}
   {tab==='history'&&<div className="card stock-list">{history.length?history.map(h=><div className="stock-row" key={h.id}><div><strong>{h.kind} · {h.name||ingMap[h.ingredientId]?.name||''}</strong><small>{h.date}{h.reason&&h.kind!=='Bán hàng'?` · ${h.reason}`:''}{h.refId?` · ${h.refId}`:''}</small></div><span>{Number(h.qty)>0?'+':''}{h.qty} {h.unit||ingMap[h.ingredientId]?.unit||''}</span></div>):<div className="empty">Chưa có lịch sử kho.</div>}</div>}
-  {modal==='ingredient'&&<Modal title={ingForm.id?'Sửa nguyên liệu':'Thêm nguyên liệu'} close={()=>{setModal(null);setIngForm({id:null,name:'',type:'Nguyên liệu',unit:'g',qty:'',minQty:''})}}><form className="form-card plain" onSubmit={saveIngredient}><label>Tên<input required value={ingForm.name} onChange={e=>setIngForm({...ingForm,name:e.target.value})} placeholder="Ví dụ: Matcha / Ly 1L"/></label><label>Loại<select value={ingForm.type} onChange={e=>setIngForm({...ingForm,type:e.target.value})}><option>Nguyên liệu</option><option>Bao bì</option></select></label><label>Đơn vị<select value={ingForm.unit} onChange={e=>setIngForm({...ingForm,unit:e.target.value})}><option>g</option><option>kg</option><option>ml</option><option>lít</option><option>cái</option><option>gói</option><option>hộp</option><option>chai</option></select></label><div className="form-grid-2"><label>Tồn hiện tại<input type="number" step="0.01" value={ingForm.qty} onChange={e=>setIngForm({...ingForm,qty:e.target.value})}/></label><label>Cảnh báo dưới<input type="number" step="0.01" value={ingForm.minQty} onChange={e=>setIngForm({...ingForm,minQty:e.target.value})}/></label></div><label>Giá nhập bình quân / {ingForm.unit}<input type="number" min="0" value={ingForm.purchasePrice||''} onChange={e=>setIngForm({...ingForm,purchasePrice:e.target.value})} placeholder="Tự cập nhật từ phiếu nhập"/><small className="hint">Dùng để tính giá trị tồn kho. Có thể chỉnh tay nếu cần.</small></label><button className="primary full">Lưu</button>{ingForm.id&&<button type="button" className="danger full ingredient-delete-btn" onClick={deleteIngredient}>Xóa nguyên liệu</button>}</form></Modal>}
+  {modal==='ingredient'&&<Modal title={ingForm.id?'Sửa nguyên liệu':'Thêm nguyên liệu'} close={()=>{setModal(null);setIngForm({id:null,name:'',type:'Nguyên liệu',unit:'g',qty:'',minQty:'',purchasePrice:'',note:''})}}><form className="form-card plain" onSubmit={saveIngredient}><label>Tên<input required value={ingForm.name} onChange={e=>setIngForm({...ingForm,name:e.target.value})} placeholder="Ví dụ: Matcha / Ly 1L"/></label><label>Loại<select value={ingForm.type} onChange={e=>setIngForm({...ingForm,type:e.target.value})}><option>Nguyên liệu</option><option>Bao bì</option></select></label><label>Đơn vị<select value={ingForm.unit} onChange={e=>setIngForm({...ingForm,unit:e.target.value})}><option>g</option><option>kg</option><option>ml</option><option>lít</option><option>cái</option><option>gói</option><option>hộp</option><option>chai</option></select></label><div className="form-grid-2"><label>Tồn hiện tại<input type="number" step="0.01" value={ingForm.qty} onChange={e=>setIngForm({...ingForm,qty:e.target.value})}/></label><label>Cảnh báo dưới<input type="number" step="0.01" value={ingForm.minQty} onChange={e=>setIngForm({...ingForm,minQty:e.target.value})}/></label></div><label>Giá nhập bình quân / {ingForm.unit}<input type="number" min="0" value={ingForm.purchasePrice||''} onChange={e=>setIngForm({...ingForm,purchasePrice:e.target.value})} placeholder="Tự cập nhật từ phiếu nhập"/><small className="hint">Dùng để tính giá trị tồn kho. Có thể chỉnh tay nếu cần.</small></label><label>Ghi chú<textarea value={ingForm.note||''} onChange={e=>setIngForm({...ingForm,note:e.target.value})} placeholder="Ví dụ: bảo quản lạnh, ưu tiên nhà cung cấp A, hạn dùng sau mở nắp..."/></label><button className="primary full">Lưu</button>{ingForm.id&&<button type="button" className="danger full ingredient-delete-btn" onClick={deleteIngredient}>Xóa nguyên liệu</button>}</form></Modal>}
   {modal==='receipt'&&<Modal title="Phiếu nhập hàng" close={()=>setModal(null)}><form className="form-card plain" onSubmit={saveReceipt}><label>Ngày nhập<input type="date" value={receipt.date} onChange={e=>setReceipt({...receipt,date:e.target.value})}/></label><label>Nguyên liệu / bao bì<select required value={receipt.ingredientId} onChange={e=>setReceipt({...receipt,ingredientId:e.target.value})}><option value="">Chọn từ danh mục kho</option>{ingredients.map(x=><option key={x.id} value={x.id}>{x.name} · {x.unit}</option>)}</select></label><label>Số lượng<input required type="number" step="0.01" value={receipt.qty} onChange={e=>setReceipt({...receipt,qty:e.target.value})}/></label><label>Giá nhập / đơn vị <small className="hint">Không bắt buộc</small><input type="number" min="0" value={receipt.unitPrice||''} onChange={e=>setReceipt({...receipt,unitPrice:e.target.value})} placeholder="Bỏ trống để lấy Tổng tiền / Số lượng"/></label><label>Tổng tiền<input type="number" value={receipt.total} onChange={e=>setReceipt({...receipt,total:e.target.value})}/></label><label>Thanh toán<select value={receipt.payment} onChange={e=>setReceipt({...receipt,payment:e.target.value})}><option>Tiền mặt</option><option>Chuyển khoản</option></select></label><button className="primary full">Lưu phiếu nhập</button></form></Modal>}
   {modal==='count'&&<Modal title="Kiểm kê kho" close={()=>setModal(null)}><form className="form-card plain" onSubmit={saveCount}><label>Nguyên liệu / bao bì<select required value={count.ingredientId} onChange={e=>setCount({...count,ingredientId:e.target.value})}><option value="">Chọn từ danh mục kho</option>{ingredients.map(x=><option key={x.id} value={x.id}>{x.name} · hệ thống {x.qty} {x.unit}</option>)}</select></label><label>Tồn thực tế<input required type="number" step="0.01" value={count.actual} onChange={e=>setCount({...count,actual:e.target.value})}/></label><label>Ghi chú<textarea value={count.note} onChange={e=>setCount({...count,note:e.target.value})}/></label><button className="primary full">Xác nhận kiểm kê</button></form></Modal>}
   {modal==='adjust'&&<Modal title="Điều chỉnh kho" close={()=>setModal(null)}><form className="form-card plain" onSubmit={saveAdjust}><label>Nguyên liệu / bao bì<select required value={adjust.ingredientId} onChange={e=>setAdjust({...adjust,ingredientId:e.target.value})}><option value="">Chọn từ danh mục kho</option>{ingredients.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label><label>Số lượng<input required type="number" step="0.01" value={adjust.qty} onChange={e=>setAdjust({...adjust,qty:e.target.value})} placeholder="Ví dụ -2 nếu hao hụt"/></label><label>Lý do<select value={adjust.reason} onChange={e=>setAdjust({...adjust,reason:e.target.value})}><option>Hư hao</option><option>Pha thử</option><option>Đổ / làm sai</option><option>Nhập thiếu trước đó</option><option>Khác</option></select></label><label>Ghi chú<textarea value={adjust.note} onChange={e=>setAdjust({...adjust,note:e.target.value})}/></label><button className="primary full">Lưu điều chỉnh</button></form></Modal>}
@@ -1518,9 +1518,13 @@ function Cash({orders,receipts,transactions,setTransactions,categories,setCatego
   const [showForm,setShowForm]=useState(false);
   const [showCategory,setShowCategory]=useState(false);
   const [showOpening,setShowOpening]=useState(false);
+  const [showDebt,setShowDebt]=useState(false);
   const [openingForm,setOpeningForm]=useState({cash:String(openingBalances?.cash||0),bank:String(openingBalances?.bank||0)});
   const [form,setForm]=useState({type:'Chi',category:'Khác',amount:'',payment:'Chuyển khoản',date:todayISO(),note:''});
+  const [debtForm,setDebtForm]=useState({content:'',amount:''});
   const [newCategory,setNewCategory]=useState('');
+  const debts=Array.isArray(openingBalances?.debts)?openingBalances.debts:[];
+  const totalDebt=debts.reduce((s,x)=>s+Math.max(0,Number(x.amount||0)),0);
 
   const validOrders=(orders||[]).filter(o=>o.status!=='Đã hủy');
   const orderIncome=validOrders.map(o=>({
@@ -1613,6 +1617,40 @@ function Cash({orders,receipts,transactions,setTransactions,categories,setCatego
   }
 
 
+  function saveDebt(e){
+    e.preventDefault();
+    const content=debtForm.content.trim();
+    const amount=Number(debtForm.amount||0);
+    if(!content)return alert('Nhập nội dung khoản nợ.');
+    if(amount<=0)return alert('Nhập số tiền đang nợ.');
+    const item={id:`NO-${Date.now()}`,content,amount,createdAt:new Date().toISOString()};
+    setOpeningBalances(prev=>({...prev,debts:[item,...(Array.isArray(prev?.debts)?prev.debts:[])]}));
+    setDebtForm({content:'',amount:''});
+  }
+  function changeDebtAmount(id,direction){
+    const debt=debts.find(x=>x.id===id);
+    if(!debt)return;
+    const raw=prompt(direction>0?'Nhập số tiền muốn cộng thêm vào khoản nợ:':'Nhập số tiền đã trả/bớt:', '');
+    if(raw===null)return;
+    const amount=Number(String(raw).replace(/[^0-9.-]/g,''));
+    if(!amount||amount<=0)return alert('Số tiền không hợp lệ.');
+    setOpeningBalances(prev=>{
+      const current=Array.isArray(prev?.debts)?prev.debts:[];
+      const next=current.map(x=>{
+        if(x.id!==id)return x;
+        const nextAmount=Math.max(0,Number(x.amount||0)+(direction*amount));
+        return {...x,amount:nextAmount};
+      }).filter(x=>Number(x.amount||0)>0);
+      return {...prev,debts:next};
+    });
+  }
+  function resolveDebt(id){
+    const debt=debts.find(x=>x.id===id);
+    if(!debt)return;
+    if(!confirm(`Đánh dấu đã xử lý "${debt.content}"? Số nợ ${fmt(debt.amount)} sẽ được xóa khỏi tổng nợ.`))return;
+    setOpeningBalances(prev=>({...prev,debts:(Array.isArray(prev?.debts)?prev.debts:[]).filter(x=>x.id!==id)}));
+  }
+
   function saveOpening(e){
     e.preventDefault();
     setOpeningBalances(prev=>({...prev,cash:Number(openingForm.cash||0),bank:Number(openingForm.bank||0)}));
@@ -1632,6 +1670,7 @@ function Cash({orders,receipts,transactions,setTransactions,categories,setCatego
     <div className="cash-summary">
       <div className="card"><div className="muted">TIỀN VÀO</div><div className="money">{fmt(income)}</div></div>
       <div className="card"><div className="muted">TIỀN RA</div><div className="money">{fmt(outcome)}</div></div>
+      <button type="button" className="card debt-summary-card" onClick={()=>setShowDebt(true)}><div className="muted">NỢ</div><div className={'money '+(totalDebt>0?'negative':'')}>{fmt(totalDebt)}</div><small>{debts.length?`${debts.length} khoản · Chạm để xem`:'Chưa có nợ · Chạm để thêm'}</small></button>
       <div className="card balance-card"><div className="muted">CHÊNH LỆCH DÒNG TIỀN</div><div className={'money '+(balance<0?'negative':'')}>{balance<0?'-':''}{fmt(Math.abs(balance))}</div></div>
       <div className="card wallet-card"><div className="muted">TIỀN MẶT HIỆN CÓ</div><div className={'money '+(currentCash<0?'negative':'')}>{currentCash<0?'-':''}{fmt(Math.abs(currentCash))}</div></div>
       <div className="card wallet-card"><div className="muted">CHUYỂN KHOẢN / APP</div><div className={'money '+(currentBank<0?'negative':'')}>{currentBank<0?'-':''}{fmt(Math.abs(currentBank))}</div></div>
@@ -1664,6 +1703,27 @@ function Cash({orders,receipts,transactions,setTransactions,categories,setCatego
         </div>
       </div>)}
     </div>
+
+    {showDebt&&<Modal title={`Nợ · ${fmt(totalDebt)}`} close={()=>setShowDebt(false)} className="debt-modal">
+      <div className="debt-modal-body">
+        <form className="form-card plain debt-form" onSubmit={saveDebt}>
+          <label>Nội dung nợ<input value={debtForm.content} onChange={e=>setDebtForm({...debtForm,content:e.target.value})} placeholder="Ví dụ: Nợ tiền sữa nhà cung cấp A"/></label>
+          <label>Số tiền đang nợ<input type="number" min="0" value={debtForm.amount} onChange={e=>setDebtForm({...debtForm,amount:e.target.value})} placeholder="0"/></label>
+          <button className="primary full">+ Thêm khoản nợ</button>
+        </form>
+        <div className="debt-list">
+          {!debts.length&&<div className="empty">Chưa có khoản nợ nào.</div>}
+          {debts.map(d=><div className="debt-row" key={d.id}>
+            <div className="debt-main"><strong>{d.content}</strong><span>{fmt(d.amount)}</span></div>
+            <div className="debt-actions">
+              <button type="button" onClick={()=>changeDebtAmount(d.id,-1)}>− Bớt nợ</button>
+              <button type="button" onClick={()=>changeDebtAmount(d.id,1)}>+ Thêm nợ</button>
+              <button type="button" className="debt-done" onClick={()=>resolveDebt(d.id)}>Đã xử lý</button>
+            </div>
+          </div>)}
+        </div>
+      </div>
+    </Modal>}
 
     {showCategory&&<Modal title="Danh mục chi phí" close={()=>setShowCategory(false)} className="category-modal">
       <div className="category-modal-body">

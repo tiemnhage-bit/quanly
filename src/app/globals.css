@@ -1153,3 +1153,47 @@ button:active{
 @media(max-width:650px){.setup-step{grid-template-columns:32px 1fr}.setup-step>button{grid-column:2}.admin-stat-grid{grid-template-columns:1fr 1fr}}
 
 .audit-list{display:grid;padding:0}.audit-row{display:flex;justify-content:space-between;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line)}.audit-row>div{display:grid;gap:3px}.audit-row>div:last-child{text-align:right}.audit-row small{color:var(--muted);font-size:11px}
+
+/* v0.25.6 - Nợ trong Thu chi */
+.debt-summary-card{
+  appearance:none;
+  width:100%;
+  text-align:left;
+  font:inherit;
+  cursor:pointer;
+  border:1px solid var(--border);
+}
+.debt-summary-card small{
+  display:block;
+  margin-top:6px;
+  color:var(--muted);
+  font-size:12px;
+}
+.debt-modal{max-width:560px}
+.debt-modal-body{display:grid;gap:14px}
+.debt-form{margin:0}
+.debt-list{display:grid;gap:10px;max-height:46vh;overflow:auto;padding-right:2px}
+.debt-row{
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:12px;
+  display:grid;
+  gap:10px;
+}
+.debt-main{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.debt-main strong{font-size:14px;line-height:1.35}
+.debt-main span{font-weight:800;white-space:nowrap}
+.debt-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+.debt-actions button{
+  border:1px solid var(--border);
+  background:var(--surface);
+  border-radius:10px;
+  padding:7px 9px;
+  font-size:12px;
+  font-weight:700;
+}
+.debt-actions .debt-done{border-color:#9bd8ad}
+@media (max-width:640px){
+  .debt-main{display:grid}
+  .debt-actions{justify-content:flex-start}
+}
