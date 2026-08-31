@@ -477,7 +477,7 @@ export default function NhaGeApp() {
   if (syncState === 'error' && !dataReady) return <SyncErrorScreen message={syncError} />;
 
   return <div className="app-shell">
-    <header className="topbar"><div><div className="brand">{shop?.name||'QUẢN LÝ QUÁN'}</div><div className="date">Free Beta · Bản 0.25.7 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn settings-btn admin-settings-wrap" aria-label="Cài đặt" title="Cài đặt" onClick={() => setScreen('more')}>⚙{isSaasAdminUser(user)&&pendingApprovals.length>0&&<span className="admin-pending-badge">{pendingApprovals.length}</span>}</button></header>
+    <header className="topbar"><div><div className="brand">{shop?.name||'QUẢN LÝ QUÁN'}</div><div className="date">Free Beta · Bản 0.25.8 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn settings-btn admin-settings-wrap" aria-label="Cài đặt" title="Cài đặt" onClick={() => setScreen('more')}>⚙{isSaasAdminUser(user)&&pendingApprovals.length>0&&<span className="admin-pending-badge">{pendingApprovals.length}</span>}</button></header>
     <main>
       <div className="page-transition" key={screen}>
       {role==='admin' && screen === 'home' && <Home todayRevenue={todayRevenue} dayOrders={dayOrders} todayQty={todayQty} cashToday={cashToday} bankToday={bankToday} knownCostToday={knownCostToday} ingredients={ingredients} closings={dayClosings} go={setScreen} openOrders={() => {setScreen('order');setOrderTab('list')}} />}
@@ -1531,10 +1531,10 @@ function Cash({orders,receipts,transactions,setTransactions,categories,setCatego
     id:'ORDER-'+o.id,
     date:o.date,
     type:'Thu',
-    category:o.source==='Tại quán'?'Order tại quán':'App Food',
+    category:o.source==='Tại quán'?'Order tại quán':(o.source||'App Food'),
     amount:Number(o.total||0),
     payment:o.payment,
-    note:o.source,
+    note:o.source==='Tại quán'?'Tại quán':'App Food',
     auto:true
   }));
   const receiptOut=(receipts||[]).filter(r=>Number(r.total||0)>0).map(r=>({
@@ -1547,7 +1547,17 @@ function Cash({orders,receipts,transactions,setTransactions,categories,setCatego
     note:'Phiếu nhập hàng',
     auto:true
   }));
-  const all=[...orderIncome,...receiptOut,...(transactions||[])].sort((a,b)=>(String(b.date)+String(b.id)).localeCompare(String(a.date)+String(a.id)));
+  const cashSortTime=(x)=>{
+    const match=String(x?.id||'').match(/(\d{13})(?!.*\d)/);
+    if(match)return Number(match[1]);
+    const dateMs=Date.parse(`${x?.date||''}T00:00:00+07:00`);
+    return Number.isFinite(dateMs)?dateMs:0;
+  };
+  const all=[...orderIncome,...receiptOut,...(transactions||[])].sort((a,b)=>{
+    const byTime=cashSortTime(b)-cashSortTime(a);
+    if(byTime!==0)return byTime;
+    return String(b.id||'').localeCompare(String(a.id||''));
+  });
   const calculatedIncome=all.filter(x=>x.type==='Thu').reduce((s,x)=>s+Number(x.amount||0),0);
   const calculatedOutcome=all.filter(x=>x.type==='Chi').reduce((s,x)=>s+Number(x.amount||0),0);
   const hasOverride=(key)=>openingBalances?.[key]!==undefined&&openingBalances?.[key]!==null&&openingBalances?.[key]!=='';
