@@ -477,7 +477,7 @@ export default function NhaGeApp() {
   if (syncState === 'error' && !dataReady) return <SyncErrorScreen message={syncError} />;
 
   return <div className="app-shell">
-    <header className="topbar"><div><div className="brand">{shop?.name||'QUẢN LÝ QUÁN'}</div><div className="date">Free Beta · Bản 0.25.4 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn settings-btn admin-settings-wrap" aria-label="Cài đặt" title="Cài đặt" onClick={() => setScreen('more')}>⚙{isSaasAdminUser(user)&&pendingApprovals.length>0&&<span className="admin-pending-badge">{pendingApprovals.length}</span>}</button></header>
+    <header className="topbar"><div><div className="brand">{shop?.name||'QUẢN LÝ QUÁN'}</div><div className="date">Free Beta · Bản 0.25.5 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn settings-btn admin-settings-wrap" aria-label="Cài đặt" title="Cài đặt" onClick={() => setScreen('more')}>⚙{isSaasAdminUser(user)&&pendingApprovals.length>0&&<span className="admin-pending-badge">{pendingApprovals.length}</span>}</button></header>
     <main>
       <div className="page-transition" key={screen}>
       {role==='admin' && screen === 'home' && <Home todayRevenue={todayRevenue} dayOrders={dayOrders} todayQty={todayQty} cashToday={cashToday} bankToday={bankToday} knownCostToday={knownCostToday} ingredients={ingredients} closings={dayClosings} go={setScreen} openOrders={() => {setScreen('order');setOrderTab('list')}} />}
@@ -1544,16 +1544,22 @@ function Cash({orders,receipts,transactions,setTransactions,categories,setCatego
     auto:true
   }));
   const all=[...orderIncome,...receiptOut,...(transactions||[])].sort((a,b)=>(String(b.date)+String(b.id)).localeCompare(String(a.date)+String(a.id)));
-  const income=all.filter(x=>x.type==='Thu').reduce((s,x)=>s+Number(x.amount||0),0);
-  const outcome=all.filter(x=>x.type==='Chi').reduce((s,x)=>s+Number(x.amount||0),0);
+  const calculatedIncome=all.filter(x=>x.type==='Thu').reduce((s,x)=>s+Number(x.amount||0),0);
+  const calculatedOutcome=all.filter(x=>x.type==='Chi').reduce((s,x)=>s+Number(x.amount||0),0);
+  const hasOverride=(key)=>openingBalances?.[key]!==undefined&&openingBalances?.[key]!==null&&openingBalances?.[key]!=='';
+  // Snapshot đối soát chỉ thay số trên thẻ tổng quan, không sửa lịch sử giao dịch.
+  const income=hasOverride('summaryIncomeOverride')?Number(openingBalances.summaryIncomeOverride):calculatedIncome;
+  const outcome=hasOverride('summaryOutcomeOverride')?Number(openingBalances.summaryOutcomeOverride):calculatedOutcome;
   const balance=income-outcome;
   const isBankPayment=(p)=>p==='Chuyển khoản'||p==='App Food'||p==='Grab Food'||p==='Shopee Food'||p==='Green Food'||p==='Be Food';
   const cashIn=all.filter(x=>x.type==='Thu'&&x.payment==='Tiền mặt').reduce((s,x)=>s+Number(x.amount||0),0);
   const cashOut=all.filter(x=>x.type==='Chi'&&x.payment==='Tiền mặt').reduce((s,x)=>s+Number(x.amount||0),0);
   const bankIn=all.filter(x=>x.type==='Thu'&&isBankPayment(x.payment)).reduce((s,x)=>s+Number(x.amount||0),0);
   const bankOut=all.filter(x=>x.type==='Chi'&&isBankPayment(x.payment)).reduce((s,x)=>s+Number(x.amount||0),0);
-  const currentCash=Number(openingBalances?.cash||0)+cashIn-cashOut;
-  const currentBank=Number(openingBalances?.bank||0)+bankIn-bankOut;
+  const calculatedCash=Number(openingBalances?.cash||0)+cashIn-cashOut;
+  const calculatedBank=Number(openingBalances?.bank||0)+bankIn-bankOut;
+  const currentCash=hasOverride('currentCashOverride')?Number(openingBalances.currentCashOverride):calculatedCash;
+  const currentBank=hasOverride('currentBankOverride')?Number(openingBalances.currentBankOverride):calculatedBank;
   const currentTotal=currentCash+currentBank;
 
   const shown=all.filter(x=>tab==='all'||(tab==='income'&&x.type==='Thu')||(tab==='expense'&&x.type==='Chi'));
@@ -1609,7 +1615,7 @@ function Cash({orders,receipts,transactions,setTransactions,categories,setCatego
 
   function saveOpening(e){
     e.preventDefault();
-    setOpeningBalances({cash:Number(openingForm.cash||0),bank:Number(openingForm.bank||0)});
+    setOpeningBalances(prev=>({...prev,cash:Number(openingForm.cash||0),bank:Number(openingForm.bank||0)}));
     setShowOpening(false);
   }
 
@@ -1631,6 +1637,7 @@ function Cash({orders,receipts,transactions,setTransactions,categories,setCatego
       <div className="card wallet-card"><div className="muted">CHUYỂN KHOẢN / APP</div><div className={'money '+(currentBank<0?'negative':'')}>{currentBank<0?'-':''}{fmt(Math.abs(currentBank))}</div></div>
       <div className="card wallet-card total-wallet"><div className="muted">TỔNG TIỀN ĐANG CÓ</div><div className={'money '+(currentTotal<0?'negative':'')}>{currentTotal<0?'-':''}{fmt(Math.abs(currentTotal))}</div></div>
     </div>
+    {(hasOverride('summaryIncomeOverride')||hasOverride('summaryOutcomeOverride')||hasOverride('currentCashOverride')||hasOverride('currentBankOverride'))&&<div className="card auto-note"><strong>Số liệu đối soát</strong><p>Các thẻ tổng quan đang dùng số liệu đã đối soát từ app cũ. Lịch sử thu/chi bên dưới vẫn giữ nguyên.</p></div>}
 
     <div className="card auto-note">
       <strong>Tự động ghi nhận</strong>
