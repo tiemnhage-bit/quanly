@@ -1222,3 +1222,34 @@ button:active{
     padding-top:18px;
   }
 }
+
+
+/* v0.25.12 - Modal sửa đơn luôn nằm trên bottom navigation mobile */
+@media (max-width:759px){
+  .overlay{
+    z-index:1200 !important;
+  }
+  .drawer{
+    position:relative;
+    z-index:1201;
+    max-height:calc(100dvh - 8px);
+    padding-bottom:calc(96px + env(safe-area-inset-bottom));
+  }
+
+  /* Bottom nav không được đè lên modal */
+  body:has(.overlay) .bottom-nav,
+  body:has(.overlay) nav.bottom-nav,
+  body:has(.overlay) .mobile-nav{
+    z-index:1 !important;
+    pointer-events:none;
+  }
+
+  /* Giữ vùng nút hành động cuối modal luôn có khoảng thở phía trên menu */
+  .drawer .modal-actions,
+  .drawer .order-edit-actions,
+  .drawer .danger-zone{
+    position:relative;
+    z-index:2;
+    background:#fff;
+  }
+}
