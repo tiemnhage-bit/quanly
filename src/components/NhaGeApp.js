@@ -477,7 +477,7 @@ export default function NhaGeApp() {
   if (syncState === 'error' && !dataReady) return <SyncErrorScreen message={syncError} />;
 
   return <div className="app-shell">
-    <header className="topbar"><div><div className="brand">{shop?.name||'QUẢN LÝ QUÁN'}</div><div className="date">Free Beta · Bản 0.25.13 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn settings-btn admin-settings-wrap" aria-label="Cài đặt" title="Cài đặt" onClick={() => setScreen('more')}>⚙{isSaasAdminUser(user)&&pendingApprovals.length>0&&<span className="admin-pending-badge">{pendingApprovals.length}</span>}</button></header>
+    <header className="topbar"><div><div className="brand">{shop?.name||'QUẢN LÝ QUÁN'}</div><div className="date">Free Beta · Bản 0.25.14 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn settings-btn admin-settings-wrap" aria-label="Cài đặt" title="Cài đặt" onClick={() => setScreen('more')}>⚙{isSaasAdminUser(user)&&pendingApprovals.length>0&&<span className="admin-pending-badge">{pendingApprovals.length}</span>}</button></header>
     <main>
       <div className="page-transition" key={screen}>
       {role==='admin' && screen === 'home' && <Home todayRevenue={todayRevenue} dayOrders={dayOrders} todayQty={todayQty} cashToday={cashToday} bankToday={bankToday} knownCostToday={knownCostToday} ingredients={ingredients} closings={dayClosings} go={setScreen} openOrders={() => {setScreen('order');setOrderTab('list')}} />}
@@ -1085,10 +1085,38 @@ function ProductManager({products,setProducts,productCategories,setProductCatego
       const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
       const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
       const pick=(row,names)=>{const key=Object.keys(row).find(k=>names.some(n=>norm(k).includes(n)));return key?row[key]:'';};
-      const imported=rows.map((r,i)=>({id:`IMP-${Date.now()}-${i}`,name:String(pick(r,['ten mon','name'])).trim(),category:String(pick(r,['danh muc','category'])||'Khác').trim(),price:Number(String(pick(r,['gia ban','price'])||0).replace(/[^0-9.-]/g,'')),cost:Number(String(pick(r,['gia von','cost'])||0).replace(/[^0-9.-]/g,'')),active:true,recipe:[]})).filter(x=>x.name&&Number.isFinite(x.price));
+      const imported=rows.map((r,i)=>{
+        const name=String(pick(r,['ten mon','name'])).trim();
+        const category=String(pick(r,['danh muc','category'])||'').trim();
+        const rawPrice=String(pick(r,['gia ban','price'])??'').trim();
+        const rawCost=String(pick(r,['gia von','cost'])??'').trim();
+        return {id:`IMP-${Date.now()}-${i}`,name,category,price:rawPrice===''?null:Number(rawPrice.replace(/[^0-9.-]/g,'')),cost:rawCost===''?null:Number(rawCost.replace(/[^0-9.-]/g,'')),active:true,recipe:[]};
+      }).filter(x=>x.name&&(x.price===null||Number.isFinite(x.price))&&(x.cost===null||Number.isFinite(x.cost)));
       if(!imported.length)throw new Error('Không đọc được món. File cần cột: Tên món, Danh mục, Giá bán, Giá vốn.');
-      if(!confirm(`Đọc được ${imported.length} món. Nhập vào menu?`))return;
-      setProducts(prev=>[...prev,...imported]);setProductCategories(prev=>Array.from(new Set([...prev,...imported.map(x=>x.category).filter(Boolean)])));alert(`Đã import ${imported.length} món.`);
+      const normalizeName=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D').toLowerCase().replace(/\s+/g,' ').trim();
+      // Nếu file có lặp tên món, chỉ lấy dòng cuối cùng cho tên đó.
+      const uniqueImported=new Map();
+      imported.forEach(item=>uniqueImported.set(normalizeName(item.name),item));
+      const incoming=Array.from(uniqueImported.values());
+      const existingNames=new Set((products||[]).map(p=>normalizeName(p.name)));
+      const willUpdate=incoming.filter(item=>existingNames.has(normalizeName(item.name))).length;
+      const willAdd=incoming.length-willUpdate;
+      if(!confirm(`Đọc được ${imported.length} dòng hợp lệ (${incoming.length} tên món khác nhau).\n\n• ${willUpdate} món đã có: cập nhật giá bán/giá vốn/danh mục trong file, giữ nguyên ID, trạng thái bán và công thức trừ kho.\n• ${willAdd} món mới: thêm vào menu.\n\nKhông tạo món trùng tên. Tiếp tục?`))return;
+      setProducts(prev=>{
+        const byName=new Map(incoming.map(item=>[normalizeName(item.name),item]));
+        const matched=new Set();
+        const merged=(prev||[]).map(existing=>{
+          const key=normalizeName(existing.name);const item=byName.get(key);
+          if(!item)return existing;
+          matched.add(key);
+          return {...existing,...(item.category?{category:item.category}:{}),...(item.price!==null?{price:item.price}:{}),...(item.cost!==null?{cost:item.cost}:{})};
+        });
+        incoming.forEach(item=>{const key=normalizeName(item.name);if(!matched.has(key)&&!(prev||[]).some(p=>normalizeName(p.name)===key)){merged.push({...item,category:item.category||'Khác',price:item.price??0,cost:item.cost??0});}});
+        return merged;
+      });
+      setProductCategories(prev=>Array.from(new Set([...prev,...incoming.map(x=>x.category).filter(Boolean)])));
+      audit?.('Import menu',`${willUpdate} món cập nhật, ${willAdd} món thêm mới`);
+      alert(`Import hoàn tất!\n• ${willUpdate} món đã có được cập nhật giá/danh mục.\n• ${willAdd} món mới được thêm.\n• Không tạo món trùng tên.`);
     }catch(e){alert(e.message||'Không đọc được file Excel.');}
   }
   function submit(e){
