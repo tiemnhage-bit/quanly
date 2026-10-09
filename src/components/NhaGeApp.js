@@ -477,7 +477,7 @@ export default function NhaGeApp() {
   if (syncState === 'error' && !dataReady) return <SyncErrorScreen message={syncError} />;
 
   return <div className="app-shell">
-    <header className="topbar"><div><div className="brand">{shop?.name||'QUẢN LÝ QUÁN'}</div><div className="date">Free Beta · Bản 0.25.12 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn settings-btn admin-settings-wrap" aria-label="Cài đặt" title="Cài đặt" onClick={() => setScreen('more')}>⚙{isSaasAdminUser(user)&&pendingApprovals.length>0&&<span className="admin-pending-badge">{pendingApprovals.length}</span>}</button></header>
+    <header className="topbar"><div><div className="brand">{shop?.name||'QUẢN LÝ QUÁN'}</div><div className="date">Free Beta · Bản 0.25.13 · <span className={'sync '+syncState}>{syncState==='saving'?'Đang đồng bộ…':syncState==='error'?'Lỗi đồng bộ':'Đã đồng bộ'}</span></div></div><button className="icon-btn settings-btn admin-settings-wrap" aria-label="Cài đặt" title="Cài đặt" onClick={() => setScreen('more')}>⚙{isSaasAdminUser(user)&&pendingApprovals.length>0&&<span className="admin-pending-badge">{pendingApprovals.length}</span>}</button></header>
     <main>
       <div className="page-transition" key={screen}>
       {role==='admin' && screen === 'home' && <Home todayRevenue={todayRevenue} dayOrders={dayOrders} todayQty={todayQty} cashToday={cashToday} bankToday={bankToday} knownCostToday={knownCostToday} ingredients={ingredients} closings={dayClosings} go={setScreen} openOrders={() => {setScreen('order');setOrderTab('list')}} />}
@@ -1101,6 +1101,15 @@ function ProductManager({products,setProducts,productCategories,setProductCatego
   }
   function edit(p){setForm({...p,recipe:p.recipe||[]});setEditing(true);window.scrollTo({top:0,behavior:'smooth'});}
   function toggle(id){setProducts(prev=>prev.map(p=>p.id===id?{...p,active:p.active===false?true:false}:p));}
+  function deleteProduct(product){
+    const name=product?.name||'sản phẩm này';
+    if(!confirm(`Xóa sản phẩm "${name}" khỏi menu?\n\nĐơn hàng lịch sử, tồn kho nguyên liệu và lịch sử thu chi sẽ được giữ nguyên. Thao tác này không thể hoàn tác.`))return;
+    setProducts(prev=>prev.filter(p=>p.id!==product.id));
+    setStockSelected(prev=>prev.filter(id=>id!==product.id));
+    if(editing&&form.id===product.id){setForm({...empty,category:categories[0]||''});setEditing(false);}
+    if(recipeProduct?.id===product.id)setRecipeProduct(null);
+    audit?.('Xóa món',name);
+  }
   function saveRecipe(recipe){setProducts(prev=>prev.map(p=>p.id===recipeProduct.id?{...p,recipe}:p));setRecipeProduct(null);}
 
   function addCategory(){
@@ -1342,7 +1351,7 @@ function ProductManager({products,setProducts,productCategories,setProductCatego
       {editing&&<button type="button" className="secondary full" onClick={()=>{setForm({...empty,category:categories[0]||''});setEditing(false)}}>Bỏ chỉnh sửa</button>}
     </form>
 
-    <div className="product-admin-list">{products.map(p=><div className="admin-row" key={p.id}><div><strong>{p.name}</strong><small>{p.category} · Bán {fmt(p.price)} · Vốn {fmt(p.cost)}</small><span className={p.active===false?'status cancel':'status'}>{p.active===false?'Đang ẩn':'Đang bán'}{p.recipe?.length?` · Trừ kho ${p.recipe.length} mục`:''}</span></div><div><button onClick={()=>setRecipeProduct(p)}>Trừ kho</button><button onClick={()=>edit(p)}>Sửa</button><button onClick={()=>toggle(p.id)}>{p.active===false?'Hiện':'Ẩn'}</button></div></div>)}</div>
+    <div className="product-admin-list">{products.map(p=><div className="admin-row" key={p.id}><div><strong>{p.name}</strong><small>{p.category} · Bán {fmt(p.price)} · Vốn {fmt(p.cost)}</small><span className={p.active===false?'status cancel':'status'}>{p.active===false?'Đang ẩn':'Đang bán'}{p.recipe?.length?` · Trừ kho ${p.recipe.length} mục`:''}</span></div><div><button onClick={()=>setRecipeProduct(p)}>Trừ kho</button><button onClick={()=>edit(p)}>Sửa</button><button onClick={()=>toggle(p.id)}>{p.active===false?'Hiện':'Ẩn'}</button><button type="button" className="danger" onClick={()=>deleteProduct(p)}>Xóa</button></div></div>)}</div>
     {recipeProduct&&<RecipeModal product={recipeProduct} ingredients={ingredients} onClose={()=>setRecipeProduct(null)} onSave={saveRecipe}/>}
   </section>
 }
