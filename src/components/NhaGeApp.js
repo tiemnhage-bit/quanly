@@ -731,14 +731,18 @@ function AuthScreen(){
       </div>
 
       <form className="auth-form" onSubmit={ownerMode==='signup'?signup:loginOwner}>
-        <label>Số điện thoại
+        <label>{ownerMode==='login'?'Số điện thoại hoặc tài khoản Admin':'Số điện thoại'}
           <input
             required
-            inputMode="tel"
-            autoComplete="tel"
+            type="text"
+            inputMode="text"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            autoComplete={ownerMode==='login'?'username':'tel'}
             value={phone}
             onChange={e=>setPhone(e.target.value)}
-            placeholder={ownerMode==='login'?'0901 234 567':'0901 234 567'}
+            placeholder={ownerMode==='login'?'Nhập số điện thoại hoặc admin':'0901 234 567'}
           />
         </label>
 
